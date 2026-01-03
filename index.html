@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAVEN // PHYSICS_LABS</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script> <!-- Placeholder for icons if needed -->
+</head>
+<body>
+    
+    <!-- Physics Background -->
+    <canvas id="physics-canvas"></canvas>
+    
+    <!-- Overlay Scanline/Vignette -->
+    <div class="overlay"></div>
+
+    <!-- Navigation -->
+    <nav class="cyber-nav">
+        <div class="logo">RAVEN<span class="dot">.</span>LABS</div>
+        <ul class="nav-links">
+            <li><a href="#hero" data-text="HOME">HOME</a></li>
+            <li><a href="#labs" data-text="SIMULATIONS">SIMULATIONS</a></li>
+            <li><a href="#hardware" data-text="HARDWARE">HARDWARE</a></li>
+            <li><a href="#projects" data-text="PROJECTS" class="locked-link">PROJECTS <span class="lock-icon">🔒</span></a></li>
+            <li><a href="#contact" data-text="CONTACT" class="locked-link">CONTACT <span class="lock-icon">🔒</span></a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main>
+        
+        <!-- Hero Section -->
+        <section id="hero" class="hero-section">
+            <div class="hero-content">
+                <h1 class="glitch" data-text="REALITY_ENGINE">REALITY_ENGINE</h1>
+                <p class="subtitle">PHYSICS // CHAOS // GEOMETRY // CODE</p>
+                <div class="hero-buttons">
+                    <a href="#labs" class="cyber-btn">INITIALIZE PROTOCOLS</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Labs / Simulations Section -->
+        <section id="labs" class="section-container">
+            <h2 class="section-title">ACTIVE_SIMULATIONS</h2>
+            <div class="grid-container">
+                
+                <!-- Card 1: Lorenz -->
+                <div class="cyber-card">
+                    <div class="card-image lorenz-img"></div>
+                    <div class="card-content">
+                        <h3>LORENZ_CHAOS</h3>
+                        <p>Interactive 3D attractor exploration. Calculate Lyapunov exponents and prediction horizons in real-time.</p>
+                        <ul class="specs">
+                            <li>RK4 Integrator</li>
+                            <li>Divergence Analysis</li>
+                        </ul>
+                        <div class="card-actions">
+                            <a href="#" class="btn-launch" onclick="alert('Launching Docker Container: Lorenz...')">LAUNCH DEMO</a>
+                            <a href="#" class="btn-code">SOURCE</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Clifford -->
+                <div class="cyber-card">
+                    <div class="card-image clifford-img"></div>
+                    <div class="card-content">
+                        <h3>CLIFFORD_PHASE</h3>
+                        <p>Geometric Algebra visualization. Trajectory folding quantified by bivector wedge magnitude.</p>
+                        <ul class="specs">
+                            <li>Wedge Product</li>
+                            <li>Local Curvature</li>
+                        </ul>
+                        <div class="card-actions">
+                            <a href="#" class="btn-launch" onclick="alert('Launching Docker Container: Clifford...')">LAUNCH DEMO</a>
+                            <a href="#" class="btn-code">SOURCE</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3: Amplituhedron -->
+                <div class="cyber-card">
+                    <div class="card-image amplo-img"></div>
+                    <div class="card-content">
+                        <h3>AMPLITUHEDRON_TOY</h3>
+                        <p>Kinematic space explorer constrained by positive geometry. Probing the boundaries of scattering amplitudes.</p>
+                        <ul class="specs">
+                            <li>Positivity Bounds</li>
+                            <li>Simplex Geometry</li>
+                        </ul>
+                        <div class="card-actions">
+                            <a href="#" class="btn-launch" onclick="alert('Launching Docker Container: Amplituhedron...')">LAUNCH DEMO</a>
+                            <a href="#" class="btn-code">SOURCE</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 4: Linear Algebra -->
+                <div class="cyber-card">
+                    <div class="card-image la-img"></div>
+                    <div class="card-content">
+                        <h3>LINEAR_PLAYGROUND</h3>
+                        <p>Intuitive matrix transformation visualizer. Eigenvectors, determinants, and singularity interpolation.</p>
+                        <ul class="specs">
+                            <li>2D Transformations</li>
+                            <li>Real-time Eigen</li>
+                        </ul>
+                        <div class="card-actions">
+                            <a href="#" class="btn-launch" onclick="alert('Launching Docker Container: Linear Algebra...')">LAUNCH DEMO</a>
+                            <a href="#" class="btn-code">SOURCE</a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Hardware Blog Section -->
+        <section id="hardware" class="section-container">
+            <h2 class="section-title">HARDWARE_LOGS</h2>
+            <div class="blog-list">
+                <article class="blog-entry">
+                    <div class="blog-date">2025.12.24</div>
+                    <div class="blog-info">
+                        <h3>Custom FPGA Risky-V Core</h3>
+                        <p>Designing a soft-core processor from scratch on the Lattice iCE40. Pipeline hazards and timing closure battles.</p>
+                        <a href="#" class="read-more">READ_LOG >></a>
+                    </div>
+                </article>
+                <article class="blog-entry">
+                    <div class="blog-date">2025.11.08</div>
+                    <div class="blog-info">
+                        <h3>Cyberdeck Build v4.0</h3>
+                        <p>Mechanical keyboard integration with Raspberry Pi 5. Custom 3D printed chassis with exposed wiring aesthetic.</p>
+                        <a href="#" class="read-more">READ_LOG >></a>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <!-- Paid Projects (Locked) -->
+        <section id="projects" class="section-container blurred">
+            <div class="lock-overlay">
+                <div class="lock-circle">
+                    <div class="lock-body"></div>
+                    <div class="lock-shackle"></div>
+                </div>
+                <h3>PAID_PROJECTS // ACCESS_DENIED</h3>
+                <p>This section is currently under non-disclosure agreements or construction.</p>
+            </div>
+            <h2 class="section-title">CLIENT_WORK</h2>
+            <div class="dummy-grid">
+                <div class="dummy-card"></div>
+                <div class="dummy-card"></div>
+                <div class="dummy-card"></div>
+            </div>
+        </section>
+
+        <!-- Contact (Locked) -->
+        <section id="contact" class="section-container disabled-section">
+            <h2 class="section-title">COMMUNICATION_UPLINK</h2>
+            <div class="contact-box locked-box">
+                <p>UPLINK_OFFLINE</p>
+                <p>Encrypted channel required for contact initialization.</p>
+            </div>
+        </section>
+
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <p>SYSTEM.OP_MODE = 'AGENTIC'</p>
+            <p>© 2026 RAVEN LABS. ALL RIGHTS RESERVED.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
