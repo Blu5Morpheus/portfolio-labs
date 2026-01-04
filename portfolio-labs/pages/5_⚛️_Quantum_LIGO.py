@@ -183,14 +183,14 @@ if raw_strain is not None:
                 # This ensures the model learns what a chirp LOOKS like spectrally
                 for _ in range(25):
                     # Sim Chirp
-                    _, c = generate_noisy_strain(t_win, int(fs_val), inject_signal=True, snr=2.0)
+                    _, c, _ = generate_noisy_strain(t_win, int(fs_val), inject_signal=True, snr=2.0)
                     feat = get_spectral_features(whiten_data(c, fs_val), fs_val)
                     X_train.append(feat)
                     Y_train.append(1.0) # Signal
                     
                 # Create "Noise" examples (Raw noise)
                 for _ in range(25):
-                    _, n = generate_noisy_strain(t_win, int(fs_val), inject_signal=False)
+                    _, n, _ = generate_noisy_strain(t_win, int(fs_val), inject_signal=False)
                     feat = get_spectral_features(whiten_data(n, fs_val), fs_val)
                     X_train.append(feat)
                     Y_train.append(-1.0) # Noise

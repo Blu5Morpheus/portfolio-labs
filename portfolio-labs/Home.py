@@ -25,7 +25,10 @@ Select a simulation from the sidebar to begin.
 - **🔥 PINN Heat Solver**: Physics-Informed Neural Network solving thermodynamics without a mesh.
 - **💎 Tungsten Fracture**: Quantum tight-binding simulation of crystal lattice breakdown.
 - **⚫ Black Hole Raytracer**: Schwarzschild geodesic integrator for gravitational lensing.
-- **🤖 RL Ship Docker**: Fast Q-Learning agent demo.
+- **🤖 RL Ship Docker**: Deep Q-Network agent (DQN) with adversarial wind.
+- **☢️ Nuclear Forensics**: AI Yield Estimator via Sedov-Taylor blast waves.
+- **🤿 Scuba AI**: Neural Buoyancy Control agent fighting Boyle's Law.
+- **📝 Engineering Blog**: Integrated viewer for technical design specifications (e.g. Radio Telescopes).
 - **🛠️ Clifford General**: (Under Construction) Generalized Geometric Algebra toolkit.
 
 ---

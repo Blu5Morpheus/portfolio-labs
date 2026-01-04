@@ -2,9 +2,12 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
+import pennylane as qml
+from pennylane import numpy as pnp
+
 matplotlib.use('Agg')
 
-st.set_page_config(page_title="Tungsten Fracture", page_icon="💎", layout="centered")
+st.set_page_config(page_title="VQE Tungsten", page_icon="💎", layout="wide")
 
 st.markdown("""
 <style>
@@ -14,66 +17,108 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("💎 Tungsten Quantum Fracture")
-st.markdown("### Tight-Binding Lattice Simulation")
-st.markdown("Simulating the breakdown of a Tungsten crystal lattice under strain by solving the 1D Schrödinger Equation (Tight-Binding Model).")
+st.title("💎 Tungsten Quantum Fracture (VQE)")
+st.markdown("### Variational Quantum Eigensolver")
+st.markdown("Finding the Ground State Energy of the atomic lattice using a parameterized quantum circuit.")
 
+# --- VQE Setup ---
+# Toy Hamiltonian for 2 interacting atoms (1D dimer unit cell)
+# H = J * (Z0 Z1) + h * (X0 + X1)
+# J represents the bond strength (decreases with strain)
+# h represents transverse field / tunneling
+
+dev = qml.device("default.qubit", wires=2)
+
+@qml.qnode(dev)
+def circuit(params, J, h):
+    # Ansatz: Hardware Efficient
+    qml.RY(params[0], wires=0)
+    qml.RY(params[1], wires=1)
+    qml.CNOT(wires=[0, 1])
+    qml.RY(params[2], wires=0)
+    qml.RY(params[3], wires=1)
+    
+    # Measure Hamiltonian Expectation
+    # H = J Z0 Z1 + h X0 + h X1
+    # We return the expectation of terms
+    # Using PennyLane's Hamiltonian structure is cleaner but manual is explicit
+    
+    return qml.expval(qml.Hamiltonian(
+        [J, h, h], 
+        [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0), qml.PauliX(1)]
+    ))
+
+# Wrapper for Gradient Descent
+def cost_fn(params, J, h):
+    return circuit(params, J, h)
+
+# --- UI ---
 col1, col2 = st.columns([1, 2])
 
 with col1:
-    st.subheader("Control")
-    strain = st.slider("Applied Strain (%)", 0.0, 20.0, 0.0)
+    st.subheader("Lattice Parameters")
+    strain_range = np.linspace(0, 0.2, 10) # 0 to 20%
+    st.write("Simulating range: 0% - 20% Strain")
     
-    # Physics Parameters
-    # As strain increases, atoms move apart -> Hopping integral (t) decreases
-    t0 = 1.0 # Base hopping energy (eV)
-    # Exponential decay of overlap integral with distance
-    hopping = t0 * np.exp(-0.2 * strain) 
-    
-    st.metric("Hopping Energy (t)", f"{hopping:.4f} eV")
-    
-    # Lattice Constant 'a' stretches
-    a0 = 3.16 # Angstroms (Tungsten roughly)
-    a = a0 * (1 + strain/100)
-    st.metric("Lattice Scale", f"{a:.2f} Å")
+    if st.button("Run VQE Sweep ⚛️"):
+        st.info("Optimizing Quantum Circuit for each strain point...")
+        
+        energies = []
+        opt = qml.GradientDescentOptimizer(stepsize=0.4)
+        params = pnp.random.random(4)
+        
+        progress = st.progress(0)
+        
+        for i, s in enumerate(strain_range):
+            # Physics Model
+            # J decreases with strain (bond weakening)
+            J_val = 1.0 * np.exp(-5.0 * s)
+            h_val = 0.5 
+            
+            # Optimization Loop (VQE)
+            # 20 steps per point
+            for _ in range(20):
+                params = opt.step(lambda p: cost_fn(p, J_val, h_val), params)
+            
+            final_E = cost_fn(params, J_val, h_val)
+            energies.append(final_E)
+            
+            progress.progress((i+1)/len(strain_range))
+        
+        st.success("Sweep Complete!")
+        st.session_state.vqe_energies = energies
+        st.session_state.strain_axis = strain_range
 
 with col2:
-    st.subheader("Energy Band Structure")
-    
-    # Tight Binding Dispersion: E(k) = -2t * cos(ka)
-    k = np.linspace(-np.pi/a, np.pi/a, 200)
-    E = -2 * hopping * np.cos(k * a)
-    
-    fig, ax = plt.subplots(figsize=(6, 4))
-    fig.patch.set_facecolor('none')
-    ax.set_facecolor('#111')
-    
-    ax.plot(k, E, color='#00f3ff', linewidth=3, label='Conduction Band')
-    
-    # Visualizing the "Gap" or Stability
-    # For a metal like Tungsten, it's about the density of states and bond strength
-    # Toy fracture logic: If hopping energy drops below threshold, bond breaks
-    fracture_threshold = 0.3
-    
-    if hopping < fracture_threshold:
-        st.error("⚠️ CRITICAL FAILURE: LATTICE FRACTURE DETECTED")
-        ax.set_title("FRACTURED STATE", color='red')
-        ax.plot(k, E, color='red', linestyle='--')
+    st.subheader("Binding Energy Curve")
+    if 'vqe_energies' in st.session_state:
+        fig, ax = plt.subplots(figsize=(6, 4))
+        fig.patch.set_facecolor('none')
+        ax.set_facecolor('#111')
+        
+        s_axis = st.session_state.strain_axis * 100 # %
+        E_axis = st.session_state.vqe_energies
+        
+        ax.plot(s_axis, E_axis, 'o-', color='#00f3ff', label='VQE Ground State')
+        
+        # Fracture Threshold
+        # If Energy rises (becomes less negative) too much, bond breaks
+        # Base energy is usually negative (bound). 0 is free.
+        
+        ax.axhline(-0.8, color='red', linestyle='--', label='Fracture Limit')
+        
+        ax.set_xlabel("Strain (%)", color='white')
+        ax.set_ylabel("Ground State Energy <H>", color='white')
+        ax.legend(facecolor='#222', edgecolor='white', labelcolor='white')
+        ax.tick_params(colors='white')
+        
+        st.pyplot(fig)
+        plt.close(fig)
     else:
-        st.success("Structure Stable")
-        ax.set_title(f"Electronic Band Structure (Strain: {strain}%)", color='white')
-    
-    ax.set_xlabel("Wavevector (k)", color='white')
-    ax.set_ylabel("Energy (eV)", color='white')
-    ax.tick_params(colors='white')
-    ax.grid(color='#333', linestyle='--')
-    
-    st.pyplot(fig)
-    plt.close(fig)
+        st.info("Run the VQE sweep to see the physics.")
 
-st.markdown("---")
 st.markdown("""
-**The Physics**:
-Strain increases the distance between atoms ($a$). This reduces the electron orbital overlap, decreasing the hopping integral ($t$). 
-When $t$ drops too low, the metallic cohesion fails, simulating a micro-fracture event at the quantum level.
+**Technical Detail**:
+We minimize $\\langle \\psi(\\theta) | H(strain) | \\psi(\\theta) \\rangle$ using a hardware-efficient ansatz.
+As strain increases, the coupling term $J Z_0 Z_1$ weakens, raising the ground state energy towards zero (unbound/fractured state).
 """)
