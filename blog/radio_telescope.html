@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radio Telescope Design // RAVEN LABS</title>
+    <link rel="stylesheet" href="../style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            padding: 40px;
+        }
+
+        .blog-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 40px;
+            border: 1px solid var(--neon-violet);
+        }
+
+        h1 {
+            color: var(--neon-violet);
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: var(--neon-blue);
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+
+        p,
+        li {
+            color: #ddd;
+            margin-bottom: 10px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th,
+        td {
+            border: 1px solid #444;
+            padding: 10px;
+            text-align: left;
+            color: #ccc;
+        }
+
+        th {
+            background: #222;
+            color: var(--neon-pink);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="blog-container">
+        <a href="../index.html" style="color: var(--neon-blue); text-decoration: none;">&lt; // RETURN_TO_BASE</a>
+
+        <h1>Design Spec: Dueling 4m "Stressed Parabola" Interferometer</h1>
+        <p><strong>Status:</strong> PLANNING<br><strong>Objective:</strong> Low-cost, high-performance Hydrogen Line
+            (1420 MHz) interferometry using hardware store materials.</p>
+
+        <hr style="border-color: #333">
+
+        <h2>1. The Design: "Stressed Parabola" (Mesh)</h2>
+        <p>A solid 4m dish is too heavy and expensive. We will build a <strong>mesh dish</strong> (geodesic/stressed
+            rib) to reduce wind load.</p>
+        <ul>
+            <li><strong>Ribs:</strong> 1/2" or 3/4" EMT conduit. Cheap, bendable, strong.</li>
+            <li><strong>Hub:</strong> Central aluminum or plywood plate.</li>
+            <li><strong>Reflector:</strong> 1/2" Hardware cloth (galvanized steel mesh). Physics check: 1420MHz = 21cm
+                wavelength. Mesh openings < 2.1cm. 1/2" (~1.27cm) is perfect.</li>
+        </ul>
+
+        <h2>2. The Mount: Alt-Azimuth</h2>
+        <p>Equatorial mounts are too heavy for this scale. We use <strong>Alt-Azimuth</strong> (Up-Down, Left-Right) and
+            handle tracking in software.</p>
+        <ul>
+            <li><strong>Azimuth (Rotation):</strong> Junkyard truck rear axle assembly or wheel hub. Bolts to concrete
+                pier.</li>
+            <li><strong>Altitude (Tilt):</strong> Linear actuator or heavy-duty pillow block bearings (Dobsonian style).
+            </li>
+        </ul>
+
+        <h2>3. Electronics Chain</h2>
+        <p><strong>A. Offset Feed:</strong> Reduces aperture blockage. Use a Biquad or Helical antenna for budget/gain
+            balance.<br>
+            <strong>B. LNA (Low Noise Amplifier):</strong> Critical. Place <em>immediately</em> at the feed.
+            Recommended: Nooelec SAWBird+ H1.<br>
+            <strong>C. Coherent Interferometry:</strong> The "Dueling" dishes need phase coherence.
+        <ul>
+            <li><strong>Option A:</strong> KrakenSDR (5-channel coherent radio).</li>
+            <li><strong>Option B:</strong> Share a single clock crystal across two RTL-SDRs (Soldering required).</li>
+        </ul>
+        </p>
+
+        <h2>4. Bill of Materials (Per Dish)</h2>
+        <table>
+            <tr>
+                <th>Component</th>
+                <th>Material</th>
+                <th>Est. Cost</th>
+            </tr>
+            <tr>
+                <td>Ribs</td>
+                <td>20x 10ft EMT Conduit (3/4")</td>
+                <td>$150</td>
+            </tr>
+            <tr>
+                <td>Reflector</td>
+                <td>50ft Hardware Cloth</td>
+                <td>$80</td>
+            </tr>
+            <tr>
+                <td>Hub/Structure</td>
+                <td>Plywood, Bolts, Lumber</td>
+                <td>$100</td>
+            </tr>
+            <tr>
+                <td>Mount</td>
+                <td>Junkyard Wheel Hub</td>
+                <td>$30</td>
+            </tr>
+            <tr>
+                <td>Motors</td>
+                <td>Stepper Motors + Belts</td>
+                <td>$60</td>
+            </tr>
+            <tr>
+                <td>Electronics</td>
+                <td>LNA + RTL-SDR + Coax</td>
+                <td>$120</td>
+            </tr>
+            <tr>
+                <td><strong>Total</strong></td>
+                <td></td>
+                <td><strong>~$540</strong></td>
+            </tr>
+        </table>
+
+        <h2>5. Next Steps</h2>
+        <p>Calculate parabolic curve coordinates for the bending jig (f/D range 0.6 - 0.7). Synchronize SDR clocks.</p>
+    </div>
+</body>
+
+</html>

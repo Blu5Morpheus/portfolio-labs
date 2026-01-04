@@ -4,3 +4,10 @@ matplotlib
 plotly
 streamlit
 scikit-learn
+pennylane
+qiskit
+torch
+torchvision
+opencv-python
+pandas
+h5py

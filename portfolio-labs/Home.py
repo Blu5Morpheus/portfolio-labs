@@ -21,6 +21,7 @@ Select a simulation from the sidebar to begin.
 - **📐 Clifford Phase Space**: Visualize local trajectory folding using Geometric Algebra bivectors.
 - **💠 Amplituhedron Toy**: A conceptual explorer for positive geometry and scattering amplitudes.
 - **🔢 Linear Algebra Playground**: Intuitive visualization of 2D matrix transformations and eigenvectors.
+- **⚛️ Quantum LIGO Detector**: Variational Quantum Classifier (VQC) detecting gravitational waves in noisy strain data.
 
 ---
 *Built with Python & Streamlit*
