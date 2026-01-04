@@ -136,4 +136,11 @@ def whiten_data(data, fs=4096):
     
     sos = signal.butter(4, [low, high], btype='bandpass', output='sos')
     whitened = signal.sosfilt(sos, data)
+    
+    # Normalize to Unit Variance (Sigma units)
+    # This ensures the VQC sees consistent amplitudes regardless of detector calibration
+    std = np.std(whitened)
+    if std > 0:
+        whitened /= std
+        
     return whitened
