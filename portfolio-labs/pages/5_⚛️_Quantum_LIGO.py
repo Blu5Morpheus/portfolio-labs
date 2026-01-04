@@ -21,6 +21,7 @@ st.markdown("""
 
 st.title("⚛️ Quantum Gravitational Wave Detector")
 st.markdown("### Variational Quantum Classifier (VQC) for LIGO Data")
+st.markdown("*Architecture: Spectral Feature Map (4 Bands) -> Angle Embedding -> Basic Entangler -> Z-Measurement*")
 
 # --- Initialize Weights in Session ---
 if 'weights' not in st.session_state:
@@ -37,6 +38,7 @@ t = None
 raw_strain = None
 whitened_strain = None
 inject = False
+fs_val = 4096.0 # Default
 
 if mode == "Simulation":
     st.sidebar.subheader("Simulation Settings")
@@ -44,9 +46,9 @@ if mode == "Simulation":
     snr = st.sidebar.slider("Signal-to-Noise Ratio (SNR)", 0.1, 5.0, 1.5)
     
     t_duration = 1.0
-    fs = 200 # Hz
-    t, raw_strain, true_signal = generate_noisy_strain(t_duration, fs, inject, snr)
-    whitened_strain = whiten_data(raw_strain)
+    fs_val = 4096.0 # Match real data rate for better spectral sim
+    t, raw_strain, true_signal = generate_noisy_strain(t_duration, int(fs_val), inject, snr)
+    whitened_strain = whiten_data(raw_strain, fs=fs_val)
 
 elif mode == "Local Data (data/)":
     data_dir = os.path.join(os.getcwd(), "data")
@@ -61,30 +63,23 @@ elif mode == "Local Data (data/)":
         file_path = os.path.join(data_dir, selected_file)
         try:
             with h5py.File(file_path, "r") as f:
-                # Basic Discovery
+                # GWOSC standard path
                 if 'strain' in f:
-                    # GWOSC standard path
                     data = f['strain']['Strain'][()]
                 elif 'data' in f:
-                    data = f['data'][()] # Generic fallback
+                    data = f['data'][()] 
                 else:
-                    # Try to find any dataset
-                    def find_dataset(name, node):
-                        if isinstance(node, h5py.Dataset) and node.shape[0] > 1000:
-                            return node
-                        return None
-                    # This is complex, let's stick to standard strain
                     data = np.zeros(1000)
-                    st.error("Could not find 'strain' group. Check HDF5 structure.")
+                    st.error("Could not find 'strain' group.")
 
-                # Load a chunk
-                slice_size = 10000 
+                slice_size = 16384 # 4 seconds at 4kHz
                 start_idx = st.sidebar.number_input("Start Index", 0, len(data)-slice_size, 0)
                 raw_strain = data[start_idx : start_idx+slice_size]
                 
                 ts = 1.0/4096
+                fs_val = 4096.0
                 t = np.arange(len(raw_strain)) * ts
-                whitened_strain = whiten_data(raw_strain)
+                whitened_strain = whiten_data(raw_strain, fs=fs_val)
                 st.sidebar.success(f"Loaded {slice_size} pts from {selected_file}")
                 
         except Exception as e:
@@ -102,21 +97,33 @@ else: # Upload
                 data = f['strain']['Strain'][()]
                 raw_strain = data[:10000]
                 ts = 1.0/4096
+                fs_val = 4096.0
                 t = np.arange(len(raw_strain)) * ts
-                whitened_strain = whiten_data(raw_strain)
-            else:
-                st.error("Invalid File Structure (Missing 'strain')")
-
+                whitened_strain = whiten_data(raw_strain, fs=fs_val)
+    
+# --- Helper for Spectral Extraction for Training ---
+def get_spectral_features(chunk, fs):
+     # Same logic as utils but for batch processing
+     freqs = np.fft.rfftfreq(len(chunk), d=1/fs)
+     mag = np.abs(np.fft.rfft(chunk))
+     bands = [(20, 80), (80, 150), (150, 300), (300, 600)]
+     features = []
+     for low, high in bands:
+        idx = np.where((freqs >= low) & (freqs < high))[0]
+        val = np.mean(mag[idx]) if len(idx) > 0 else 0.0
+        features.append(val)
+     features = np.array(features)
+     features = np.log1p(features)
+     return (features - np.min(features)) / (np.max(features) - np.min(features) + 1e-9) * np.pi
 
 # --- Main Logic ---
 
 if raw_strain is not None:
     
-    # --- Tabbed Interface for Workflow ---
     tab_viz, tab_train, tab_infer = st.tabs(["1. Visualize Data", "2. Train Model", "3. Run Detector"])
     
     with tab_viz:
-        st.subheader("Signal Processing Phase")
+        st.subheader("Signal Analysis")
         col_raw, col_white = st.columns(2)
 
         with col_raw:
@@ -125,18 +132,16 @@ if raw_strain is not None:
             fig_raw.patch.set_facecolor('none')
             ax.set_facecolor('#111')
             ax.plot(t, raw_strain, color='#444', alpha=0.8, label='Strain')
-            if inject:
-                ax.plot(t, true_signal, color='cyan', alpha=0.6, label='True Injection')
             ax.legend(facecolor='#222', edgecolor='white', labelcolor='white')
             ax.tick_params(colors='white')
             st.pyplot(fig_raw)
 
         with col_white:
-            st.markdown("#### Whitened Data (VQC Input)")
+            st.markdown("#### Whitened Data")
             fig_white, ax = plt.subplots(figsize=(8, 3))
             fig_white.patch.set_facecolor('none')
             ax.set_facecolor('#111')
-            ax.plot(t, whitened_strain, color='#b026ff', label='Whitened Strain')
+            ax.plot(t, whitened_strain, color='#b026ff', label='Whitened')
             ax.legend(facecolor='#222', edgecolor='white', labelcolor='white')
             ax.tick_params(colors='white')
             st.pyplot(fig_white)
@@ -156,52 +161,48 @@ if raw_strain is not None:
 
         with col_param:
             st.markdown("**Hyperparameters**")
-            epochs = st.number_input("Epochs", 1, 50, 15)
+            epochs = st.number_input("Epochs", 1, 50, 20)
             lr = st.number_input("Learning Rate", 0.001, 0.5, 0.05)
             
-            st.markdown("---")
-            if st.button("START TRAINING (Hybrid PyTorch Loop)"):
-                st.info("Initializing Loop...")
+            if st.button("START TRAINING (Spectral Mode)"):
+                st.info("Generating Training Dataset (Spectral Features)...")
                 
-                # --- Create Dataset (Windowed) ---
-                # We need to make this harder. 
-                # Task: Distinguish "Quiet" noise from "Loud" noise (Signal Proxy)
-                # But we add label noise so it's not trivial.
+                # Training Window: 0.1s = ~400 samples at 4kHz
+                t_win = 0.1 
+                win_pts = int(t_win * fs_val)
                 
-                window_size = 4 
                 X_train = []
                 Y_train = []
                 
-                # Sample 50 windows
-                for _ in range(50):
-                    idx = np.random.randint(0, len(whitened_strain) - window_size)
-                    chunk = whitened_strain[idx:idx+window_size]
+                # Create "Signal" examples (High energy in chirp bands)
+                # We simulate chirp chunks specifically for training
+                # This ensures the model learns what a chirp LOOKS like spectrally
+                for _ in range(25):
+                    # Sim Chirp
+                    _, c = generate_noisy_strain(t_win, int(fs_val), inject_signal=True, snr=2.0)
+                    feat = get_spectral_features(whiten_data(c, fs_val), fs_val)
+                    X_train.append(feat)
+                    Y_train.append(1.0) # Signal
                     
-                    # Norm
-                    chunk_norm = (chunk - np.min(chunk))/(np.max(chunk) - np.min(chunk) + 1e-9) * np.pi
-                    
-                    # Label Logic: Energy Threshold
-                    energy = np.sum(chunk**2)
-                    thresh = np.mean(whitened_strain**2) * 2.5
-                    
-                    label = 1.0 if energy > thresh else -1.0
-                    
-                    # Add Noise to Data so it's not perfect
-                    chunk_noisy = chunk_norm + np.random.normal(0, 0.1, len(chunk))
-                    
-                    X_train.append(chunk_noisy)
-                    Y_train.append(label)
+                # Create "Noise" examples (Raw noise)
+                for _ in range(25):
+                    _, n = generate_noisy_strain(t_win, int(fs_val), inject_signal=False)
+                    feat = get_spectral_features(whiten_data(n, fs_val), fs_val)
+                    X_train.append(feat)
+                    Y_train.append(-1.0) # Noise
                 
-                X_tensor = torch.tensor(np.array(X_train), dtype=torch.float32)
-                Y_tensor = torch.tensor(np.array(Y_train), dtype=torch.float32)
+                # Shuffle
+                indices = np.arange(50)
+                np.random.shuffle(indices)
+                X_train = np.array(X_train)[indices]
+                Y_train = np.array(Y_train)[indices]
                 
-                # --- Define Model ---
+                X_tensor = torch.tensor(X_train, dtype=torch.float32)
+                Y_tensor = torch.tensor(Y_train, dtype=torch.float32)
+                
+                # Define Model
                 weight_shapes = {"weights": (n_layers, n_qubits)}
                 qlayer = qml.qnn.TorchLayer(quantum_circuit, weight_shapes)
-                
-                # Initialize with current session weights if compatible, else random
-                # (Ignoring for simplicity to allow architecture change)
-                
                 opt = Adam(qlayer.parameters(), lr=lr)
                 criterion = MSELoss()
                 
@@ -215,83 +216,77 @@ if raw_strain is not None:
                     loss = criterion(pred_sum, Y_tensor)
                     loss.backward()
                     opt.step()
-                    
                     losses.append(loss.item())
                     progress.progress((epoch+1)/epochs)
                 
                 st.success(f"Training Complete! Final Loss: {losses[-1]:.4f}")
                 st.line_chart(losses)
                 
-                # Update Session State
                 with torch.no_grad():
-                    trained_weights = qlayer.weights.detach().numpy()
-                    st.session_state.weights = trained_weights
+                    st.session_state.weights = qlayer.weights.detach().numpy()
                     st.session_state.is_trained = True
 
     with tab_infer:
         st.subheader("Inference / Detection")
         
         status_color = "green" if st.session_state.is_trained else "red"
-        status_text = "TRAINED Model Configured" if st.session_state.is_trained else "UNTRAINED (Random Weights)"
-        st.markdown(f":{status_color}[**Status: {status_text}**]")
+        status_text = "TRAINED" if st.session_state.is_trained else "UNTRAINED"
+        st.markdown(f"**Model Status:** :{status_color}[{status_text}]")
+        
+        det_thresh = st.slider("Detection Threshold (Qubit Z-Exp)", -1.0, 1.0, 0.0)
         
         col_ctrl, col_plot = st.columns([1,3])
-        
         with col_ctrl:
-            det_thresh = st.slider("Detection Threshold", -2.0, 2.0, 0.5)
-            window_size = 20
-            step = 10
-            
-            run_btn = st.button("SCAN DATA NOW")
+            scan_btn = st.button("SCAN DATA NOW")
             
         with col_plot:
-            if run_btn:
-                # Use current weights
+            if scan_btn:
+                st.write("Scanning...")
                 current_weights = st.session_state.weights
                 
-                # Must match trained layer shape logic (if trained)
-                # If weights shape mismatch (due to changing layer count in train tab), warn user
-                if current_weights.shape != (st.session_state.weights.shape[0], 4):
-                     st.warning("Weight shape mismatch! Did you change layers without retraining? Using random.")
-                     current_weights = np.random.uniform(0, np.pi, (n_layers, 4))
+                # Window: 0.1s
+                t_win = 0.1
+                win_pts = int(t_win * fs_val)
+                step = win_pts // 2 # 50% overlap
                 
                 scan_scores = []
                 scan_times = []
                 
-                num_windows = (len(whitened_strain) - window_size) // step
-                if num_windows > 200: num_windows = 200 # Cap
+                # Limit scan to ~200 windows for perf
+                total_samples = len(whitened_strain)
+                max_windows = 200
+                
+                # If too long, just scan a portion
+                if total_samples // step > max_windows:
+                    st.caption(f"Data too long. Scanning first {max_windows} windows...")
+                    iterator = range(max_windows)
+                else:
+                    iterator = range((total_samples - win_pts) // step)
                 
                 progress_infer = st.progress(0)
                 
-                for i in range(num_windows):
+                for i in iterator:
                     start = i * step
-                    end = start + window_size
+                    end = start + win_pts
                     chunk = whitened_strain[start:end]
-                    t_point = t[start + window_size//2]
+                    t_point = t[start + win_pts//2]
                     
-                    val = run_classifier(chunk, current_weights)
+                    # Pass fs to utils
+                    val = run_classifier(chunk, current_weights, fs=fs_val)
                     scan_scores.append(val)
                     scan_times.append(t_point)
                     
-                    progress_infer.progress((i+1)/num_windows)
+                    progress_infer.progress((i+1)/len(iterator))
                 
-                # Plot
                 fig_det, ax = plt.subplots(figsize=(10, 3))
                 fig_det.patch.set_facecolor('none')
                 ax.set_facecolor('#111')
-                
-                ax.plot(scan_times, scan_scores, color='#00f3ff', linewidth=2, label='Quantum Activity <Z>')
+                ax.plot(scan_times, scan_scores, color='#00f3ff', linewidth=2, label='Quantum Output')
                 ax.axhline(det_thresh, color='red', linestyle='--', label='Threshold')
-                
-                # Highlight Detections
-                scan_scores_np = np.array(scan_scores)
-                # Determine "Detected" regions
-                # Simple boolean mask
-                
-                ax.set_title(f"Inference Result (Weights: {'Trained' if st.session_state.is_trained else 'Random'})", color='white')
+                ax.set_title("Detection Trace", color='white')
                 ax.legend(facecolor='#222', edgecolor='white', labelcolor='white')
                 ax.tick_params(colors='white')
                 st.pyplot(fig_det)
-
+                
 else:
     st.info("Awaiting Data...")

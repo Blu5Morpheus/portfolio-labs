@@ -24,24 +24,54 @@ def quantum_circuit(inputs, weights):
     # Returning expectation of PauliZ on each wire
     return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_qubits)]
 
-def run_classifier(data_slice, weights):
+def run_classifier(data_slice, weights, fs=4096):
     """
-    Run the VQC on a slice of data.
+    Run the VQC on a slice of data using Spectral Features.
+    Mapping: 4 Qubits representing 4 Frequency Bands.
     """
-    # Pre-process: Resize data to match n_qubits (dimensionality reduction)
-    # Simple strategy: Downsample or average pooling to get 4 features
-    if len(data_slice) > n_qubits:
-        # Resample to 4 points
-        pooled_data = signal.resample(data_slice, n_qubits)
-    else:
-        pooled_data = np.pad(data_slice, (0, n_qubits - len(data_slice)))
+    # Feature Extraction: Band Power
+    # We want to capture the "Chirp" energy distribution.
+    # Bands: [20-80Hz], [80-150Hz], [150-300Hz], [300-600Hz] (Approx chirp sweep)
     
-    # Normalize to [0, pi] for AngleEmbedding
-    # Map min/max to 0, pi
-    norm_data = (pooled_data - np.min(pooled_data)) / (np.max(pooled_data) - np.min(pooled_data) + 1e-9) * np.pi
+    # 1. Compute FFT
+    if len(data_slice) < 4: return 0 # Too small
+    
+    freqs = np.fft.rfftfreq(len(data_slice), d=1/fs)
+    mag = np.abs(np.fft.rfft(data_slice))
+    
+    # Define bands (Indices)
+    bands = [
+        (20, 80),
+        (80, 150),
+        (150, 300),
+        (300, 600)
+    ]
+    
+    features = []
+    for low, high in bands:
+        # Find indices
+        idx = np.where((freqs >= low) & (freqs < high))[0]
+        if len(idx) > 0:
+            avg_power = np.mean(mag[idx])
+        else:
+            avg_power = 0.0
+        features.append(avg_power)
+        
+    # Resize to n_qubits if needed (though we defined 4 bands for 4 qubits)
+    features = np.array(features[:n_qubits])
+    
+    # Normalize features to [0, pi] for Angle Embedding
+    # Log scale is often better for power spectra
+    features = np.log1p(features) 
+    
+    # Min-Max Scaling to [0, pi]
+    if np.max(features) - np.min(features) > 1e-9:
+        norm_features = (features - np.min(features)) / (np.max(features) - np.min(features)) * np.pi
+    else:
+        norm_features = np.zeros_like(features)
     
     # Run Circuit
-    expectations = quantum_circuit(norm_data, weights)
+    expectations = quantum_circuit(norm_features, weights)
     
     # Return mean expectation
     return np.mean(expectations)
