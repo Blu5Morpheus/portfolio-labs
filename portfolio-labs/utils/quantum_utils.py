@@ -88,10 +88,22 @@ def generate_noisy_strain(t_duration=1.0, fs=1024, inject_signal=False, snr=1.0)
         
     return t, data, scaled_signal
 
-def whiten_data(data):
+def whiten_data(data, fs=4096):
     """
-    Toy whitening: Normalize spectral density.
+    Whitens data using a bandpass filter tuned to the sampling rate.
+    LIGO Sensitive Band: ~20Hz to ~2000Hz.
     """
-    sos = signal.butter(4, [0.05, 0.45], btype='bandpass', output='sos')
+    nyquist = fs / 2
+    
+    # Desired band: 30Hz - 1000Hz
+    # Safe limits for generic bandpass
+    low = 30.0 / nyquist
+    high = 1000.0 / nyquist
+    
+    # Safety checks
+    if low <= 0: low = 0.01
+    if high >= 1: high = 0.99
+    
+    sos = signal.butter(4, [low, high], btype='bandpass', output='sos')
     whitened = signal.sosfilt(sos, data)
     return whitened
