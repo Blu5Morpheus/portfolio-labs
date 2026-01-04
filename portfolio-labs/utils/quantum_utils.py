@@ -1,6 +1,7 @@
 import numpy as np
 import pennylane as qml
 from scipy import signal
+from scipy.signal import windows
 
 # --- Quantum Circuit ---
 n_qubits = 4
@@ -42,10 +43,7 @@ def run_classifier(data_slice, weights):
     # Run Circuit
     expectations = quantum_circuit(norm_data, weights)
     
-    # Post-process: Sum of expectations? Or parity? 
-    # For a classifier, we often look at the first qubit's output or sum.
-    # Let's verify 'detection' if sum(Z) < Threshold (since |1> is -1)
-    # But for this toy, let's return the mean expectation.
+    # Return mean expectation
     return np.mean(expectations)
 
 # --- Data Simulation ---
@@ -58,7 +56,9 @@ def generate_chirp_signal(t_duration, fs, t_event=0.5, amplitude=1.0):
     # localized around t_event
     
     # Create a window
-    window = signal.gaussian(len(t), std=int(fs*0.05))
+    # FIX: Use windows.gaussian for recent SciPy versions
+    window = windows.gaussian(len(t), std=int(fs*0.05))
+    
     # Shift window to t_event
     shift = int((t_event - t_duration/2) * fs)
     window = np.roll(window, shift)
@@ -76,7 +76,6 @@ def generate_noisy_strain(t_duration=1.0, fs=1024, inject_signal=False, snr=1.0)
     t, pure_signal = generate_chirp_signal(t_duration, fs, t_event=0.5)
     
     # Coloured noise simulation (approximating LIGO PSD roughly with 1/f)
-    # Simple White Noise for MVP is often enough to show 'whitening' necessity
     noise = np.random.normal(0, 1.0, len(t))
     
     if inject_signal:
@@ -92,8 +91,6 @@ def generate_noisy_strain(t_duration=1.0, fs=1024, inject_signal=False, snr=1.0)
 def whiten_data(data):
     """
     Toy whitening: Normalize spectral density.
-    For this MVP, we'll just implement a bandpass filter to remove DC and high freq noise,
-    mimicking the visual effect of 'cleaning' the data.
     """
     sos = signal.butter(4, [0.05, 0.45], btype='bandpass', output='sos')
     whitened = signal.sosfilt(sos, data)
