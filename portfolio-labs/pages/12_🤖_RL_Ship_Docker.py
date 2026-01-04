@@ -124,11 +124,11 @@ with col_param:
                 # Train Step
                 if len(replay) > 32:
                     batch = random.sample(replay, 32)
-                    b_s = torch.tensor([x[0] for x in batch])
-                    b_a = torch.tensor([x[1] for x in batch]).unsqueeze(1)
-                    b_r = torch.tensor([x[2] for x in batch]).unsqueeze(1)
-                    b_ns = torch.tensor([x[3] for x in batch])
-                    b_d = torch.tensor([x[4] for x in batch]).unsqueeze(1)
+                    b_s = torch.tensor(np.array([x[0] for x in batch]), dtype=torch.float32)
+                    b_a = torch.tensor([x[1] for x in batch], dtype=torch.long).unsqueeze(1)
+                    b_r = torch.tensor([x[2] for x in batch], dtype=torch.float32).unsqueeze(1)
+                    b_ns = torch.tensor(np.array([x[3] for x in batch]), dtype=torch.float32)
+                    b_d = torch.tensor([x[4] for x in batch], dtype=torch.bool).unsqueeze(1)
                     
                     q_curr = policy_net(b_s).gather(1, b_a)
                     with torch.no_grad():
