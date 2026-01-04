@@ -21,13 +21,15 @@ st.markdown("""
 
 st.title("⚛️ Quantum Gravitational Wave Detector")
 st.markdown("### Variational Quantum Classifier (VQC) for LIGO Data")
-st.markdown("""
-**The Concept**: Classical neural networks struggle with specific noise profiles in spacetime strain data. 
-We use a **Quantum Kernel** — mapping classical data into a high-dimensional Hilbert space ($2^N$ dimensions) — to "unwind" this noise and detect the "chirp" of black hole mergers.
-""")
 
-# --- Sidebar ---
-st.sidebar.header("Data Source")
+# --- Initialize Weights in Session ---
+if 'weights' not in st.session_state:
+    # Random initialization (Untrained)
+    st.session_state.weights = np.random.uniform(0, np.pi, (2, 4)) # 2 layers, 4 qubits
+    st.session_state.is_trained = False
+
+# --- Data Source Section ---
+st.sidebar.header("1. Data Source")
 mode = st.sidebar.radio("Input Mode", ["Simulation", "Local Data (data/)", "Upload (.hdf5)"])
 
 # Shared variables
@@ -37,11 +39,10 @@ whitened_strain = None
 inject = False
 
 if mode == "Simulation":
-    st.sidebar.header("Injection Settings")
+    st.sidebar.subheader("Simulation Settings")
     inject = st.sidebar.checkbox("Inject Gravitational Wave", value=True)
     snr = st.sidebar.slider("Signal-to-Noise Ratio (SNR)", 0.1, 5.0, 1.5)
     
-    # Data Sim
     t_duration = 1.0
     fs = 200 # Hz
     t, raw_strain, true_signal = generate_noisy_strain(t_duration, fs, inject, snr)
@@ -60,13 +61,32 @@ elif mode == "Local Data (data/)":
         file_path = os.path.join(data_dir, selected_file)
         try:
             with h5py.File(file_path, "r") as f:
+                # Basic Discovery
                 if 'strain' in f:
+                    # GWOSC standard path
                     data = f['strain']['Strain'][()]
-                    raw_strain = data[:10000] # Slice for performance
-                    ts = 1.0/4096
-                    t = np.arange(len(raw_strain)) * ts
-                    whitened_strain = whiten_data(raw_strain)
-                    st.success(f"Loaded {selected_file}")
+                elif 'data' in f:
+                    data = f['data'][()] # Generic fallback
+                else:
+                    # Try to find any dataset
+                    def find_dataset(name, node):
+                        if isinstance(node, h5py.Dataset) and node.shape[0] > 1000:
+                            return node
+                        return None
+                    # This is complex, let's stick to standard strain
+                    data = np.zeros(1000)
+                    st.error("Could not find 'strain' group. Check HDF5 structure.")
+
+                # Load a chunk
+                slice_size = 10000 
+                start_idx = st.sidebar.number_input("Start Index", 0, len(data)-slice_size, 0)
+                raw_strain = data[start_idx : start_idx+slice_size]
+                
+                ts = 1.0/4096
+                t = np.arange(len(raw_strain)) * ts
+                whitened_strain = whiten_data(raw_strain)
+                st.sidebar.success(f"Loaded {slice_size} pts from {selected_file}")
+                
         except Exception as e:
             st.error(f"Error loading file: {e}")
     else:
@@ -84,182 +104,194 @@ else: # Upload
                 ts = 1.0/4096
                 t = np.arange(len(raw_strain)) * ts
                 whitened_strain = whiten_data(raw_strain)
-                st.success(f"Loaded {len(raw_strain)} pts.")
-
-st.sidebar.header("Circuit Parameters")
-n_layers = st.sidebar.slider("Entanglement Layers", 1, 5, 2)
-st.sidebar.caption(f"Qubits: {n_qubits} (Simulated on default.qubit)")
+            else:
+                st.error("Invalid File Structure (Missing 'strain')")
 
 
 # --- Main Logic ---
 
 if raw_strain is not None:
-    # --- Visualization 1: Data ---
-    st.subheader("1. Signal Processing Phase")
-    col_raw, col_white = st.columns(2)
+    
+    # --- Tabbed Interface for Workflow ---
+    tab_viz, tab_train, tab_infer = st.tabs(["1. Visualize Data", "2. Train Model", "3. Run Detector"])
+    
+    with tab_viz:
+        st.subheader("Signal Processing Phase")
+        col_raw, col_white = st.columns(2)
 
-    with col_raw:
-        st.markdown("#### Raw Strain (Time Series)")
-        fig_raw, ax = plt.subplots(figsize=(8, 3))
-        fig_raw.patch.set_facecolor('none')
-        ax.set_facecolor('#111')
-        ax.plot(t, raw_strain, color='#444', alpha=0.8, label='Strain')
-        if inject:
-            ax.plot(t, true_signal, color='cyan', alpha=0.6, label='True Injection')
-        ax.legend(facecolor='#222', edgecolor='white', labelcolor='white')
-        ax.tick_params(colors='white')
-        st.pyplot(fig_raw)
-
-    with col_white:
-        st.markdown("#### Whitened Data (Input to VQC)")
-        fig_white, ax = plt.subplots(figsize=(8, 3))
-        fig_white.patch.set_facecolor('none')
-        ax.set_facecolor('#111')
-        ax.plot(t, whitened_strain, color='#b026ff', label='Whitened Strain')
-        ax.legend(facecolor='#222', edgecolor='white', labelcolor='white')
-        ax.tick_params(colors='white')
-        st.pyplot(fig_white)
-
-
-    # --- Quantum Processing ---
-    st.subheader("2. Quantum Processing Unit (QPU)")
-
-    col_circ, col_res = st.columns([1, 2])
-
-    # Weights for the circuit
-    if 'weights' not in st.session_state:
-        st.session_state.weights = np.random.uniform(0, np.pi, (n_layers, n_qubits))
-
-    with col_circ:
-        st.markdown("**Variational Ansatz**")
-        drawer = qml.draw(quantum_circuit)
-        dummy_input = np.random.uniform(0, np.pi, n_qubits)
-        st.code(drawer(dummy_input, st.session_state.weights), language="text")
-        
-        st.markdown("---")
-        st.markdown("**Training Control**")
-        
-        # Training Parameters
-        epochs = st.number_input("Epochs", 1, 100, 10)
-        lr = st.number_input("Learning Rate", 0.001, 1.0, 0.1)
-        
-        if st.button("TRAIN VQC (PyTorch)"):
-            st.info("Initializing Hybrid Training Loop...")
-            
-            # 1. Prepare Training Data (Self-Supervised / Auto-Encoder style or Dummy Labels)
-            # For this demo, let's assume we want to distinguish signal from noise.
-            # We'll create small windows of "Noise" (from quiet parts) and "signal" (injected or high amplitude)
-            # Or simpler: Minimize energy of output for noise?
-            
-            # Let's generate synthetic labels for the current data for demonstration
-            # Label = 1 if signal injected (amplitude > threshold), 0 otherwise
-            threshold = np.std(whitened_strain) * 2.0
-            
-            # Creating dataset from the whitened strain
-            window_size = n_qubits 
-            X_train = []
-            Y_train = []
-            
-            # Sample 20 windows
-            for _ in range(20):
-                idx = np.random.randint(0, len(whitened_strain) - window_size)
-                chunk = whitened_strain[idx:idx+window_size]
-                
-                # Simple "Ground Truth" logic for the toy training
-                # If we injected signal, we know where it is. If real data, we usually don't know without a template.
-                # Here we will train it to detect "High Energy" events as a proxy
-                energy = np.sum(chunk**2)
-                label = 1.0 if energy > np.mean(whitened_strain**2)*5 else -1.0
-                
-                # Normalize chunk to [0, pi]
-                chunk_norm = (chunk - np.min(chunk))/(np.max(chunk) - np.min(chunk) + 1e-9) * np.pi
-                X_train.append(chunk_norm)
-                Y_train.append(label)
-                
-            X_tensor = torch.tensor(np.array(X_train), dtype=torch.float32)
-            Y_tensor = torch.tensor(np.array(Y_train), dtype=torch.float32)
-            
-            # 2. Define QNode Interface
-            weight_shapes = {"weights": (n_layers, n_qubits)}
-            qlayer = qml.qnn.TorchLayer(quantum_circuit, weight_shapes)
-            
-            # 3. Optimizer
-            opt = Adam(qlayer.parameters(), lr=lr)
-            criterion = MSELoss()
-            
-            # 4. Loop
-            progress = st.progress(0)
-            losses = []
-            
-            for epoch in range(epochs):
-                opt.zero_grad()
-                predictions = qlayer(X_tensor) # Output is list of expvals
-                
-                # We want a single scalar output for classification.
-                # Let's sum the PauliZ expectations (Z_tot)
-                # Output of qlayer is [batch, n_qubits]
-                pred_sum = torch.sum(predictions, dim=1)
-                
-                loss = criterion(pred_sum, Y_tensor)
-                loss.backward()
-                opt.step()
-                
-                losses.append(loss.item())
-                progress.progress((epoch+1)/epochs)
-            
-            st.success(f"Training Complete! Final Loss: {losses[-1]:.4f}")
-            st.line_chart(losses)
-            
-            # Update session weights (Extract from torch layer)
-            # TorchLayer stores weights in .weights parameter usually
-            # But extracting them back to numpy for the pure qnode utils is tricky as shape might flatten
-            # We will adhere to use the trained torch layer for inference below? 
-            # Or just update the dummy weights visually.
-            
-            # Sync weights back for "Live Detection" which uses numpy QNode
-            with torch.no_grad():
-                trained_weights = qlayer.weights.detach().numpy()
-                st.session_state.weights = trained_weights
-
-    with col_res:
-        st.markdown("**Live Detection (Scanning Window)**")
-        
-        if st.button("RUN DETECTOR"):
-            window_size = 20 # points
-            step = 10
-            detection_scores = []
-            scan_times = []
-            
-            progress = st.progress(0)
-            
-            num_windows = (len(whitened_strain) - window_size) // step
-            if num_windows > 100: num_windows = 100 # Cap for performance
-            
-            # Use current weights (Trained if button clicked)
-            current_weights = st.session_state.weights
-            
-            for i in range(num_windows):
-                start = i * step
-                end = start + window_size
-                chunk = whitened_strain[start:end]
-                time_point = t[start + window_size//2]
-                
-                exp_vals = run_classifier(chunk, current_weights)
-                detection_scores.append(exp_vals)
-                scan_times.append(time_point)
-                progress.progress((i+1) / num_windows)
-                
-            fig_det, ax = plt.subplots(figsize=(10, 3))
-            fig_det.patch.set_facecolor('none')
+        with col_raw:
+            st.markdown("#### Raw Strain")
+            fig_raw, ax = plt.subplots(figsize=(8, 3))
+            fig_raw.patch.set_facecolor('none')
             ax.set_facecolor('#111')
-            ax.plot(scan_times, detection_scores, color='#00f3ff', linewidth=2, label='QNode Output <Z>')
-            ax.axhline(0.0, color='gray', linestyle='--')
-            
-            ax.set_title("Quantum Classifier Output", color='white')
+            ax.plot(t, raw_strain, color='#444', alpha=0.8, label='Strain')
+            if inject:
+                ax.plot(t, true_signal, color='cyan', alpha=0.6, label='True Injection')
             ax.legend(facecolor='#222', edgecolor='white', labelcolor='white')
             ax.tick_params(colors='white')
-            st.pyplot(fig_det)
-else:
-    st.warning("No data loaded. Select input mode.")
+            st.pyplot(fig_raw)
 
-st.info("Offline Protocol: Place .hdf5 files in `portfolio-web/data/` for auto-detection.")
+        with col_white:
+            st.markdown("#### Whitened Data (VQC Input)")
+            fig_white, ax = plt.subplots(figsize=(8, 3))
+            fig_white.patch.set_facecolor('none')
+            ax.set_facecolor('#111')
+            ax.plot(t, whitened_strain, color='#b026ff', label='Whitened Strain')
+            ax.legend(facecolor='#222', edgecolor='white', labelcolor='white')
+            ax.tick_params(colors='white')
+            st.pyplot(fig_white)
+            
+    with tab_train:
+        st.subheader("Quantum Model Training")
+        
+        col_circ, col_param = st.columns([1, 2])
+        
+        with col_circ:
+            st.markdown("**Ansatz**")
+            n_layers = st.number_input("Layers", 1, 5, 2)
+            n_qubits = 4
+            dummy_drawer_weights = np.random.uniform(0, np.pi, (n_layers, n_qubits))
+            drawer = qml.draw(quantum_circuit)
+            st.code(drawer(np.zeros(n_qubits), dummy_drawer_weights), language="text")
+
+        with col_param:
+            st.markdown("**Hyperparameters**")
+            epochs = st.number_input("Epochs", 1, 50, 15)
+            lr = st.number_input("Learning Rate", 0.001, 0.5, 0.05)
+            
+            st.markdown("---")
+            if st.button("START TRAINING (Hybrid PyTorch Loop)"):
+                st.info("Initializing Loop...")
+                
+                # --- Create Dataset (Windowed) ---
+                # We need to make this harder. 
+                # Task: Distinguish "Quiet" noise from "Loud" noise (Signal Proxy)
+                # But we add label noise so it's not trivial.
+                
+                window_size = 4 
+                X_train = []
+                Y_train = []
+                
+                # Sample 50 windows
+                for _ in range(50):
+                    idx = np.random.randint(0, len(whitened_strain) - window_size)
+                    chunk = whitened_strain[idx:idx+window_size]
+                    
+                    # Norm
+                    chunk_norm = (chunk - np.min(chunk))/(np.max(chunk) - np.min(chunk) + 1e-9) * np.pi
+                    
+                    # Label Logic: Energy Threshold
+                    energy = np.sum(chunk**2)
+                    thresh = np.mean(whitened_strain**2) * 2.5
+                    
+                    label = 1.0 if energy > thresh else -1.0
+                    
+                    # Add Noise to Data so it's not perfect
+                    chunk_noisy = chunk_norm + np.random.normal(0, 0.1, len(chunk))
+                    
+                    X_train.append(chunk_noisy)
+                    Y_train.append(label)
+                
+                X_tensor = torch.tensor(np.array(X_train), dtype=torch.float32)
+                Y_tensor = torch.tensor(np.array(Y_train), dtype=torch.float32)
+                
+                # --- Define Model ---
+                weight_shapes = {"weights": (n_layers, n_qubits)}
+                qlayer = qml.qnn.TorchLayer(quantum_circuit, weight_shapes)
+                
+                # Initialize with current session weights if compatible, else random
+                # (Ignoring for simplicity to allow architecture change)
+                
+                opt = Adam(qlayer.parameters(), lr=lr)
+                criterion = MSELoss()
+                
+                progress = st.progress(0)
+                losses = []
+                
+                for epoch in range(epochs):
+                    opt.zero_grad()
+                    predictions = qlayer(X_tensor) 
+                    pred_sum = torch.sum(predictions, dim=1)
+                    loss = criterion(pred_sum, Y_tensor)
+                    loss.backward()
+                    opt.step()
+                    
+                    losses.append(loss.item())
+                    progress.progress((epoch+1)/epochs)
+                
+                st.success(f"Training Complete! Final Loss: {losses[-1]:.4f}")
+                st.line_chart(losses)
+                
+                # Update Session State
+                with torch.no_grad():
+                    trained_weights = qlayer.weights.detach().numpy()
+                    st.session_state.weights = trained_weights
+                    st.session_state.is_trained = True
+
+    with tab_infer:
+        st.subheader("Inference / Detection")
+        
+        status_color = "green" if st.session_state.is_trained else "red"
+        status_text = "TRAINED Model Configured" if st.session_state.is_trained else "UNTRAINED (Random Weights)"
+        st.markdown(f":{status_color}[**Status: {status_text}**]")
+        
+        col_ctrl, col_plot = st.columns([1,3])
+        
+        with col_ctrl:
+            det_thresh = st.slider("Detection Threshold", -2.0, 2.0, 0.5)
+            window_size = 20
+            step = 10
+            
+            run_btn = st.button("SCAN DATA NOW")
+            
+        with col_plot:
+            if run_btn:
+                # Use current weights
+                current_weights = st.session_state.weights
+                
+                # Must match trained layer shape logic (if trained)
+                # If weights shape mismatch (due to changing layer count in train tab), warn user
+                if current_weights.shape != (st.session_state.weights.shape[0], 4):
+                     st.warning("Weight shape mismatch! Did you change layers without retraining? Using random.")
+                     current_weights = np.random.uniform(0, np.pi, (n_layers, 4))
+                
+                scan_scores = []
+                scan_times = []
+                
+                num_windows = (len(whitened_strain) - window_size) // step
+                if num_windows > 200: num_windows = 200 # Cap
+                
+                progress_infer = st.progress(0)
+                
+                for i in range(num_windows):
+                    start = i * step
+                    end = start + window_size
+                    chunk = whitened_strain[start:end]
+                    t_point = t[start + window_size//2]
+                    
+                    val = run_classifier(chunk, current_weights)
+                    scan_scores.append(val)
+                    scan_times.append(t_point)
+                    
+                    progress_infer.progress((i+1)/num_windows)
+                
+                # Plot
+                fig_det, ax = plt.subplots(figsize=(10, 3))
+                fig_det.patch.set_facecolor('none')
+                ax.set_facecolor('#111')
+                
+                ax.plot(scan_times, scan_scores, color='#00f3ff', linewidth=2, label='Quantum Activity <Z>')
+                ax.axhline(det_thresh, color='red', linestyle='--', label='Threshold')
+                
+                # Highlight Detections
+                scan_scores_np = np.array(scan_scores)
+                # Determine "Detected" regions
+                # Simple boolean mask
+                
+                ax.set_title(f"Inference Result (Weights: {'Trained' if st.session_state.is_trained else 'Random'})", color='white')
+                ax.legend(facecolor='#222', edgecolor='white', labelcolor='white')
+                ax.tick_params(colors='white')
+                st.pyplot(fig_det)
+
+else:
+    st.info("Awaiting Data...")

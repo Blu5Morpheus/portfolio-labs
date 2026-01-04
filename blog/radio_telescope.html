@@ -60,7 +60,19 @@
             background: #222;
             color: var(--neon-pink);
         }
+
+        .mermaid {
+            background: #111;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #333;
+        }
     </style>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+    </script>
 </head>
 
 <body>
@@ -76,6 +88,25 @@
         <h2>1. The Design: "Stressed Parabola" (Mesh)</h2>
         <p>A solid 4m dish is too heavy and expensive. We will build a <strong>mesh dish</strong> (geodesic/stressed
             rib) to reduce wind load.</p>
+
+        <div class="mermaid">
+            graph TD
+            Hub[Central Hub (Plywood/Alu)] --> Ribs
+            Ribs[20x EMT Conduit Ribs] -->|Bending Stress| Rim[Outer Rim Cable]
+            Mesh[0.5 inch Hardware Cloth] --Zip Ties--> Ribs
+            subgraph Structure
+            Hub
+            Ribs
+            Rim
+            Mesh
+            end
+            Feed[Feed Arm (Cantilever)] --> Hub
+            LNA[LNA & Filter] --> Feed
+            style Hub fill:#333,stroke:#b026ff,stroke-width:2px
+            style Ribs fill:#222,stroke:#00f3ff
+            style Feed fill:#400,stroke:#ff0055
+        </div>
+
         <ul>
             <li><strong>Ribs:</strong> 1/2" or 3/4" EMT conduit. Cheap, bendable, strong.</li>
             <li><strong>Hub:</strong> Central aluminum or plywood plate.</li>
@@ -99,11 +130,32 @@
             <strong>B. LNA (Low Noise Amplifier):</strong> Critical. Place <em>immediately</em> at the feed.
             Recommended: Nooelec SAWBird+ H1.<br>
             <strong>C. Coherent Interferometry:</strong> The "Dueling" dishes need phase coherence.
+        </p>
+
+        <div class="mermaid">
+            flowchart LR
+            Dish1[Dish 1 (Left)] --> LNA1[LNA]
+            Dish2[Dish 2 (Right)] --> LNA2[LNA]
+            LNA1 --> Coax1[Coax Cable]
+            LNA2 --> Coax2[Coax Cable]
+            subgraph Processing
+            Coax1 --> CH1[SDR Channel 1]
+            Coax2 --> CH2[SDR Channel 2]
+            Clock[Shared Clock / KrakenSDR] -.-> CH1
+            Clock -.-> CH2
+            CH1 & CH2 --> Correlator[GNURadio / Correlator]
+            end
+            Correlator --> Output[Interferometer Fringes]
+            style Dish1 fill:#222,stroke:#00f3ff
+            style Dish2 fill:#222,stroke:#00f3ff
+            style Clock fill:#400,stroke:#ff0055,stroke-width:2px
+            style Correlator fill:#333,stroke:#b026ff
+        </div>
+
         <ul>
             <li><strong>Option A:</strong> KrakenSDR (5-channel coherent radio).</li>
             <li><strong>Option B:</strong> Share a single clock crystal across two RTL-SDRs (Soldering required).</li>
         </ul>
-        </p>
 
         <h2>4. Bill of Materials (Per Dish)</h2>
         <table>
