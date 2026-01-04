@@ -1,39 +1,38 @@
 # Deployment Guide
 
-Since we designed these as **Streamlit** apps, the easiest way to deploy them for free is **Render** (as originally planned) or **Streamlit Community Cloud**.
+You have been upgraded to the **Multi-Page App** structure!
+All your simulations are now part of a single unified "Raven Physics Labs" application.
 
-(Note: "Fiverr" is a freelance marketplace, so I assume you meant **Render** or similar cloud host! If you are packaging this to *sell* on Fiverr, these instructions will help your buyer.)
+## 🚀 Easy Deployment on Render
 
-## Option 1: Render (Recommended)
+### 1. The Structure
+Your code is now organized for a single deployment:
+- Entry Point: `portfolio-labs/Home.py`
+- Pages: `portfolio-labs/pages/`
+- Utils: `portfolio-labs/utils/`
 
-1.  **Push to GitHub**: Create a repository for `portfolio-labs` and push your code.
+### 2. Configure Render
+Since this is now one app, you only need **ONE** Web Service (instead of 4).
+
+1.  **Push to GitHub**: Push the `portfolio-labs` directory.
 2.  **Create Web Service**:
-    *   Go to dashboard.render.com
-    *   Select "New Web Service"
     *   Connect your repo.
-3.  **Configure**:
-    *   **Runtime**: Python 3
+    *   **Root Directory**: `portfolio-labs` (Important! This sets the context)
     *   **Build Command**: `pip install -r requirements.txt`
-    *   **Start Command**:
-        ```bash
-        streamlit run apps/chaos_lorenz/app.py --server.port $PORT --server.address 0.0.0.0
-        ```
-    *   *Note: You will need to create a separate Web Service for each app (Lorenz, Clifford, etc.) or merge them into one multi-page app.*
+    *   **Start Command**: `streamlit run Home.py`
 
-## Option 2: Streamlit Community Cloud
-
-1.  **Push to GitHub**.
-2.  **Sign in** to share.streamlit.io.
-3.  **Deploy**:
-    *   Select Repository.
-    *   Select Branch (main).
-    *   Select Main File Path (e.g., `apps/chaos_lorenz/app.py`).
-    *   Click **Deploy**.
+### 3. Adding New Apps (Future Proofing)
+To add a new simulation in the future:
+1.  Create a new file in `portfolio-labs/pages/` (e.g., `5_⚡_New_Sim.py`).
+2.  Streamlit will automatically detect it and add it to the sidebar navigation!
 
 ## Linking to Portfolio
-Once deployed, get the URL (e.g., `https://chaos-lorenz.onrender.com`) and update `index.html`:
+Update `index.html` to point to your single service URL (plus deep links if you want):
 
 ```html
-<!-- Update the onclick event -->
-<a href="https://chaos-lorenz.onrender.com" target="_blank" class="btn-launch">LAUNCH DEMO</a>
+<!-- Example: Launch the Hub -->
+<a href="https://your-raven-lab.onrender.com" target="_blank" class="btn-launch">LAUNCH HUB</a>
+
+<!-- Example: Deep Link to Lorenz -->
+<a href="https://your-raven-lab.onrender.com/Lorenz_Chaos" target="_blank" class="btn-launch">LAUNCH CHAOS</a>
 ```
