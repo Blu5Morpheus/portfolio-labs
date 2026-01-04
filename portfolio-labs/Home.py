@@ -22,6 +22,11 @@ Select a simulation from the sidebar to begin.
 - **💠 Amplituhedron Toy**: A conceptual explorer for positive geometry and scattering amplitudes.
 - **🔢 Linear Algebra Playground**: Intuitive visualization of 2D matrix transformations and eigenvectors.
 - **⚛️ Quantum LIGO Detector**: Variational Quantum Classifier (VQC) detecting gravitational waves in noisy strain data.
+- **🔥 PINN Heat Solver**: Physics-Informed Neural Network solving thermodynamics without a mesh.
+- **💎 Tungsten Fracture**: Quantum tight-binding simulation of crystal lattice breakdown.
+- **⚫ Black Hole Raytracer**: Schwarzschild geodesic integrator for gravitational lensing.
+- **🤖 RL Ship Docker**: Fast Q-Learning agent demo.
+- **🛠️ Clifford General**: (Under Construction) Generalized Geometric Algebra toolkit.
 
 ---
 *Built with Python & Streamlit*

@@ -1,5 +1,7 @@
 import streamlit as st
 import numpy as np
+import matplotlib
+matplotlib.use('Agg') # Force headless backend for server stability
 import matplotlib.pyplot as plt
 import pennylane as qml
 from utils.quantum_utils import generate_noisy_strain, whiten_data, run_classifier, quantum_circuit, n_qubits
@@ -135,6 +137,7 @@ if raw_strain is not None:
             ax.legend(facecolor='#222', edgecolor='white', labelcolor='white')
             ax.tick_params(colors='white')
             st.pyplot(fig_raw)
+            plt.close(fig_raw)
 
         with col_white:
             st.markdown("#### Whitened Data")
@@ -145,6 +148,7 @@ if raw_strain is not None:
             ax.legend(facecolor='#222', edgecolor='white', labelcolor='white')
             ax.tick_params(colors='white')
             st.pyplot(fig_white)
+            plt.close(fig_white)
             
     with tab_train:
         st.subheader("Quantum Model Training")
@@ -221,6 +225,7 @@ if raw_strain is not None:
                 
                 st.success(f"Training Complete! Final Loss: {losses[-1]:.4f}")
                 st.line_chart(losses)
+                # plt.close called implicitly by st.line_chart? No, it uses Altair. Safe.
                 
                 with torch.no_grad():
                     st.session_state.weights = qlayer.weights.detach().numpy()
@@ -286,7 +291,10 @@ if raw_strain is not None:
                 ax.set_title("Detection Trace", color='white')
                 ax.legend(facecolor='#222', edgecolor='white', labelcolor='white')
                 ax.tick_params(colors='white')
+                ax.legend(facecolor='#222', edgecolor='white', labelcolor='white')
+                ax.tick_params(colors='white')
                 st.pyplot(fig_det)
+                plt.close(fig_det)
                 
 else:
     st.info("Awaiting Data...")
