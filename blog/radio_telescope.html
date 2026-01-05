@@ -77,85 +77,93 @@
 
 <body>
     <div class="blog-container">
-        <a href="../index.html" style="color: var(--neon-blue); text-decoration: none;">&lt; // RETURN_TO_BASE</a>
+        <a href="../portfolio-labs/pages/16_📝_Engineering_Blog.py"
+            style="color: var(--neon-blue); text-decoration: none;">&lt; // RETURN_TO_LABS</a>
 
-        <h1>Design Spec: Dueling 4m "Stressed Parabola" Interferometer</h1>
-        <p><strong>Status:</strong> PLANNING<br><strong>Objective:</strong> Low-cost, high-performance Hydrogen Line
-            (1420 MHz) interferometry using hardware store materials.</p>
+        <h1>Design Spec: Dueling 4m "Stressed Parabola"</h1>
+        <p><strong>Status:</strong> CONSTRUCTION PHASE 1<br>
+            <strong>Mission:</strong> Low-cost interferometric imaging of the <strong>Crab Pulsar</strong>.
+        </p>
+
+        <div style="border: 1px solid #ff0055; padding: 15px; background: rgba(50,0,20,0.5); margin: 20px 0;">
+            <strong style="color: #ff0055;">TARGET ACQUISITION: CRAB PULSAR (B0531+21)</strong><br>
+            The Crab Pulsar is a neutron star spinning 30 times per second. It is one of the brightest radio sources in
+            the sky (Taurus A).
+            <br><br>
+            <strong>Goal:</strong> Detect the giant radio pulses (GRPs) using a 2-element interferometer to cancel out
+            local RFI (Radio Frequency Interference).
+        </div>
 
         <hr style="border-color: #333">
 
         <h2>1. The Design: "Stressed Parabola" (Mesh)</h2>
-        <p>A solid 4m dish is too heavy and expensive. We will build a <strong>mesh dish</strong> (geodesic/stressed
-            rib) to reduce wind load.</p>
+        <p>A solid 4m dish is too heavy and expensive. We use a <strong>geodesic stressed rib</strong> design.
+            By bending straight conduit tubes over a central fulcrum, we approximate a parabola within 98% accuracy.</p>
 
         <div class="mermaid">
-            graph TD
-            Hub[Central Hub (Plywood/Alu)] --> Ribs
-            Ribs[20x EMT Conduit Ribs] -->|Bending Stress| Rim[Outer Rim Cable]
+            flowchart TD
+            Hub[Central Hub Plywood/Alu] --> Ribs
+            Ribs[20x EMT Conduit Ribs] -->|Bending Force| Rim[Outer Rim Cable]
             Mesh[0.5 inch Hardware Cloth] --Zip Ties--> Ribs
+
             subgraph Structure
             Hub
             Ribs
             Rim
             Mesh
             end
-            Feed[Feed Arm (Cantilever)] --> Hub
+
+            Feed[Feed Arm Cantilever] --> Hub
             LNA[LNA & Filter] --> Feed
+
             style Hub fill:#333,stroke:#b026ff,stroke-width:2px
             style Ribs fill:#222,stroke:#00f3ff
             style Feed fill:#400,stroke:#ff0055
         </div>
 
         <ul>
-            <li><strong>Ribs:</strong> 1/2" or 3/4" EMT conduit. Cheap, bendable, strong.</li>
-            <li><strong>Hub:</strong> Central aluminum or plywood plate.</li>
-            <li><strong>Reflector:</strong> 1/2" Hardware cloth (galvanized steel mesh). Physics check: 1420MHz = 21cm
-                wavelength. Mesh openings < 2.1cm. 1/2" (~1.27cm) is perfect.</li>
-        </ul>
-
-        <h2>2. The Mount: Alt-Azimuth</h2>
-        <p>Equatorial mounts are too heavy for this scale. We use <strong>Alt-Azimuth</strong> (Up-Down, Left-Right) and
-            handle tracking in software.</p>
-        <ul>
-            <li><strong>Azimuth (Rotation):</strong> Junkyard truck rear axle assembly or wheel hub. Bolts to concrete
-                pier.</li>
-            <li><strong>Altitude (Tilt):</strong> Linear actuator or heavy-duty pillow block bearings (Dobsonian style).
+            <li><strong>Ribs:</strong> 3/4" EMT conduit (Electrical Metallic Tubing). It bends elastically to form the
+                curve.</li>
+            <li><strong>Reflector:</strong> 1/2" Hardware cloth. At 1420 MHz (21cm wavelength), 1/2" mesh acts like a
+                solid mirror (leakage < 1%).</li>
+            <li><strong>Focal Ratio (f/D):</strong> 0.6. This places the focus ~2.4m from the center, easy to support.
             </li>
         </ul>
 
+        <h2>2. The Mount: Alt-Azimuth</h2>
+        <p>Equatorial mounts are massive. We use <strong>Alt-Azimuth</strong> and track the pulsar via
+            software-controlled stepper motors.</p>
+        <ul>
+            <li><strong>Azimuth:</strong> Re-purposed <em>Truck Wheel Hub</em> (Ford F-150 rear axle). Indestructible
+                and smooth.</li>
+            <li><strong>Altitude:</strong> Heavy-duty linear actuator (Solar tracker style) or pillow-blocks.</li>
+        </ul>
+
         <h2>3. Electronics Chain</h2>
-        <p><strong>A. Offset Feed:</strong> Reduces aperture blockage. Use a Biquad or Helical antenna for budget/gain
-            balance.<br>
-            <strong>B. LNA (Low Noise Amplifier):</strong> Critical. Place <em>immediately</em> at the feed.
-            Recommended: Nooelec SAWBird+ H1.<br>
-            <strong>C. Coherent Interferometry:</strong> The "Dueling" dishes need phase coherence.
-        </p>
+        <p>To see the Crab, we need extreme sensitivity (+Gain) and low noise (Low K).</p>
 
         <div class="mermaid">
             flowchart LR
-            Dish1[Dish 1 (Left)] --> LNA1[LNA]
-            Dish2[Dish 2 (Right)] --> LNA2[LNA]
-            LNA1 --> Coax1[Coax Cable]
-            LNA2 --> Coax2[Coax Cable]
-            subgraph Processing
-            Coax1 --> CH1[SDR Channel 1]
-            Coax2 --> CH2[SDR Channel 2]
-            Clock[Shared Clock / KrakenSDR] -.-> CH1
-            Clock -.-> CH2
-            CH1 & CH2 --> Correlator[GNURadio / Correlator]
-            end
-            Correlator --> Output[Interferometer Fringes]
+            Dish1[Dish 1 Left] --> Feed1[BiQuad Feed]
+            Dish2[Dish 2 Right] --> Feed2[BiQuad Feed]
+
+            Feed1 --> LNA1[Nooelec SAWBird+ H1]
+            Feed2 --> LNA2[Nooelec SAWBird+ H1]
+
+            LNA1 -->|Coax| Radio1[RTL-SDR V3]
+            LNA2 -->|Coax| Radio2[RTL-SDR V3]
+
+            Clock[Shared 28.8MHz Clock] -.-> Radio1
+            Clock -.-> Radio2
+
+            Radio1 & Radio2 --> PC[Correlator GNURadio]
+            PC --> Plot[Interferometer Fringes]
+
             style Dish1 fill:#222,stroke:#00f3ff
             style Dish2 fill:#222,stroke:#00f3ff
             style Clock fill:#400,stroke:#ff0055,stroke-width:2px
-            style Correlator fill:#333,stroke:#b026ff
+            style PC fill:#333,stroke:#b026ff
         </div>
-
-        <ul>
-            <li><strong>Option A:</strong> KrakenSDR (5-channel coherent radio).</li>
-            <li><strong>Option B:</strong> Share a single clock crystal across two RTL-SDRs (Soldering required).</li>
-        </ul>
 
         <h2>4. Bill of Materials (Per Dish)</h2>
         <table>
@@ -175,34 +183,31 @@
                 <td>$80</td>
             </tr>
             <tr>
-                <td>Hub/Structure</td>
-                <td>Plywood, Bolts, Lumber</td>
+                <td>Hub</td>
+                <td>Plywood + Aluminum Plates</td>
                 <td>$100</td>
             </tr>
             <tr>
-                <td>Mount</td>
-                <td>Junkyard Wheel Hub</td>
-                <td>$30</td>
-            </tr>
-            <tr>
-                <td>Motors</td>
-                <td>Stepper Motors + Belts</td>
-                <td>$60</td>
+                <td>Mount Beam</td>
+                <td>Pressure Treated 4x4 Lumber</td>
+                <td>$50</td>
             </tr>
             <tr>
                 <td>Electronics</td>
-                <td>LNA + RTL-SDR + Coax</td>
+                <td>LNA + SDR + Cables</td>
                 <td>$120</td>
             </tr>
             <tr>
                 <td><strong>Total</strong></td>
                 <td></td>
-                <td><strong>~$540</strong></td>
+                <td><strong>~$500</strong></td>
             </tr>
         </table>
 
         <h2>5. Next Steps</h2>
-        <p>Calculate parabolic curve coordinates for the bending jig (f/D range 0.6 - 0.7). Synchronize SDR clocks.</p>
+        <p>1. Cut the plywood hub templates.<br>
+            2. Build the "Mounting Pier" (Concrete + Wheel Hub).<br>
+            3. Phase sync the two SDRs using the noise source method.</p>
     </div>
 </body>
 
