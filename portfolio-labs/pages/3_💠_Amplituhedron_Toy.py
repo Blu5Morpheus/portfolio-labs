@@ -100,24 +100,37 @@ st.markdown(f"""
 - **Interpretation**: { "Points inside contribute to the amplitude." if probe_score > 0 else "Points outside violate physical principles (in this toy model)." }
 """, unsafe_allow_html=True)
 st.markdown("---")
-st.subheader("💥 Scattering Event Viewer")
+st.subheader("📍 LHC/CERN Collision Event")
+st.write("Simulating a scattering amplitude in the **Geometric Sector** of the detector.")
 
-if st.button("Simulate 4-Particle Scattering"):
-    # Visualize Feynman-like outgoing legs
-    fig, ax = plt.subplots(figsize=(4,4))
+if st.button("TRIGGER EVENT (4-Gluon Scattering)"):
+    # Visualize Feynman-like outgoing legs inside a Detector
+    fig, ax = plt.subplots(figsize=(6,6))
     fig.patch.set_facecolor('none')
-    ax.set_facecolor('#111')
+    ax.set_facecolor('#000000')
+    
+    # Detector Rings (CMS Style)
+    # Tracker (Silicon)
+    ax.add_artist(plt.Circle((0,0), 0.5, color='#333', fill=False, linestyle='--', linewidth=1))
+    # ECAL (Green)
+    ax.add_artist(plt.Circle((0,0), 1.0, color='green', alpha=0.3, fill=False, linewidth=5))
+    # HCAL (Orange)
+    ax.add_artist(plt.Circle((0,0), 1.4, color='orange', alpha=0.3, fill=False, linewidth=8))
+    # Muon Chambers (Red blocks)
+    ax.add_artist(plt.Circle((0,0), 1.8, color='red', alpha=0.2, fill=False, linewidth=2))
     
     # Center
-    ax.scatter([0], [0], color='yellow', s=200, marker='*')
+    ax.scatter([0], [0], color='yellow', s=300, marker='*', zorder=10, label="Interaction Point")
     
     # 4 Legs (Momentum vectors)
     angles = np.linspace(0, 2*np.pi, 5)[:-1] + np.random.normal(0, 0.2, 4)
     for i, th in enumerate(angles):
-        ax.arrow(0, 0, np.cos(th), np.sin(th), head_width=0.1, color='#00f3ff')
-        ax.text(np.cos(th)*1.2, np.sin(th)*1.2, f"p{i+1}", color='white')
+        # Jet cones
+        ax.arrow(0, 0, np.cos(th)*1.5, np.sin(th)*1.5, head_width=0.1, color='#00f3ff', linewidth=2, zorder=5)
+        ax.text(np.cos(th)*1.7, np.sin(th)*1.7, f"Jet {i+1}", color='white', fontsize=10)
         
-    ax.set_xlim(-1.5, 1.5); ax.set_ylim(-1.5, 1.5)
+    ax.set_xlim(-2, 2); ax.set_ylim(-2, 2)
     ax.axis('off')
+    ax.set_title("Transverse Plane View (x-y)", color='white')
     st.pyplot(fig)
     plt.close(fig)

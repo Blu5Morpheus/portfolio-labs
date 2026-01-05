@@ -29,6 +29,8 @@ Select a simulation from the sidebar to begin.
 - **☢️ Nuclear Forensics**: AI Yield Estimator via Sedov-Taylor blast waves.
 - **🤿 Scuba AI**: Neural Buoyancy Control agent fighting Boyle's Law.
 - **📝 Engineering Blog**: Integrated viewer for technical design specifications (e.g. Radio Telescopes).
+- **🐶 Laika SETI**: Technosignature hunter trained on Green Bank spectrograms.
+- **🔐 Quantum Lock**: Post-Quantum Cryptography SDK (LWE Lattice "Untangling").
 - **🛠️ Clifford General**: (Under Construction) Generalized Geometric Algebra toolkit.
 
 ---
