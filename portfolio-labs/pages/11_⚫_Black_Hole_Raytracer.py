@@ -48,6 +48,18 @@ with tab_geo:
             fig, ax = plt.subplots(figsize=(6,6))
             fig.patch.set_facecolor('none')
             ax.set_facecolor('black')
+            
+            # Accretion Disk (Visuals)
+            disk_inner = plt.Circle((0,0), 3.0, color='orange', alpha=0.3, fill=False, linewidth=2)
+            disk_outer = plt.Circle((0,0), 5.0, color='red', alpha=0.2, fill=False, linewidth=1)
+            ax.add_artist(disk_inner)
+            ax.add_artist(disk_outer)
+            
+            # Fill logic for disk
+            th_disk = np.linspace(0, 2*np.pi, 200)
+            for r_disk in np.linspace(3, 5, 10):
+                ax.plot(r_disk*np.cos(th_disk), r_disk*np.sin(th_disk), color='orange', alpha=0.1)
+            
             ax.fill(np.cos(phi), np.sin(phi), color='black', zorder=10) # BH radius 1 in these units
             ax.plot(np.cos(phi), np.sin(phi), color='white') # Horizon
             ax.plot(x, y, color='#b026ff', linewidth=2)

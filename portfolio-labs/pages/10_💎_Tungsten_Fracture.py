@@ -57,32 +57,38 @@ col1, col2 = st.columns([1, 2])
 
 with col1:
     st.subheader("Lattice Parameters")
-    strain_range = np.linspace(0, 0.2, 10) # 0 to 20%
+    strain_range = np.linspace(0, 0.2, 10) 
     st.write("Simulating range: 0% - 20% Strain")
+    
+    # New Physics: Temperature
+    temp = st.slider("Temperature (Kelvin)", 0, 3000, 300, help="Thermal energy excites phonons, blurring the energy bands.")
+    kB = 8.617e-5 # eV/K (Boltzman)
+    thermal_E = kB * temp
+    st.metric("Thermal Energy (kT)", f"{thermal_E:.3f} eV")
     
     if st.button("Run VQE Sweep ⚛️"):
         st.info("Optimizing Quantum Circuit for each strain point...")
         
         energies = []
-        opt = qml.GradientDescentOptimizer(stepsize=0.4)
         params = pnp.random.random(4)
+        opt = qml.GradientDescentOptimizer(stepsize=0.4)
         
         progress = st.progress(0)
         
         for i, s in enumerate(strain_range):
-            # Physics Model
-            # J decreases with strain (bond weakening)
             J_val = 1.0 * np.exp(-5.0 * s)
             h_val = 0.5 
             
-            # Optimization Loop (VQE)
-            # 20 steps per point
             for _ in range(20):
                 params = opt.step(lambda p: cost_fn(p, J_val, h_val), params)
             
-            final_E = cost_fn(params, J_val, h_val)
-            energies.append(final_E)
+            E_ground = cost_fn(params, J_val, h_val)
             
+            # Physics: Thermal Fluctuations
+            # VQE finds E0. Real material has E ~ E0 + Thermal Noise
+            E_real = E_ground + np.random.normal(0, thermal_E)
+            
+            energies.append(E_real)
             progress.progress((i+1)/len(strain_range))
         
         st.success("Sweep Complete!")
