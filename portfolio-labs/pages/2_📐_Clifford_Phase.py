@@ -14,9 +14,12 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("📐 Clifford Algebra Phase Space")
-st.markdown("### Quantifying Trajectory Folding with Geometric Algebra")
-st.markdown("We analyze the local geometry of the Lorenz attractor using the **wedge product** magnitude $||v_t \\wedge v_{t+1}||$, which quantifies local turning and folding complexity.")
+st.title("📐 Geometric Algebra: Phase Space")
+st.markdown("### Exterior Product Analysis ($v \\wedge u$)")
+st.markdown("""
+This tool visualizes phase space trajectories using the **Exterior Product** (Bivector) to measure 'turning' or 'area sweeping'.
+In $\\mathbb{R}^3$, the magnitude of the bivector $|a \\wedge b|$ corresponds to the norm of the cross product $|a \\times b|$, representing the area of the parallelogram spanned by the vectors.
+""")
 
 # --- Sidebar ---
 st.sidebar.header("Lorenz Parameters")

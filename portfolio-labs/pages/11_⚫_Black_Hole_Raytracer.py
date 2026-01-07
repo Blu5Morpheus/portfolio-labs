@@ -20,6 +20,8 @@ st.title("⚫ Quantum Black Hole")
 st.markdown("### Hawking Radiation & Geodesics")
 st.markdown("Simulating **Quantum Field Theory (QFT)** effects near the Event Horizon.")
 
+st.warning("**Research Note**: This module illustrates **semi-classical intuition** (Geodesics + Tunneling probability), not a full QFT treatment in curved spacetime.")
+
 tab_geo, tab_qft, tab_cam = st.tabs(["Classic Raytracer", "Hawking Radiation (QFT)", "Photon Camera"])
 
 with tab_geo:

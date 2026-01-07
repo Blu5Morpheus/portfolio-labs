@@ -234,6 +234,14 @@ if raw_strain is not None:
     with tab_infer:
         st.subheader("Inference / Detection")
         
+        # --- SCOPE DISCLAIMER ---
+        with st.expander("ℹ️ Research Scope & Limitations", expanded=False):
+            st.markdown("""
+            **1. Simulation vs Reality**: This detector is trained on *simulated* chirps injected into noise or whited real data. It is not performed with matched filtering templates used in production LIGO analysis.
+            **2. Coincidence**: Real detection requires coincident signals in Hanford (H1) and Livingston (L1). This app processes single-channel data.
+            **3. Quantum Advantage**: This demonstrates a *Variational Quantum Classifier* (VQC) approach. While promising for non-linear feature detection, classical matched filtering remains the gold standard for SNR optimality.
+            """)
+            
         status_color = "green" if st.session_state.is_trained else "red"
         status_text = "TRAINED" if st.session_state.is_trained else "UNTRAINED"
         st.markdown(f"**Model Status:** :{status_color}[{status_text}]")
@@ -256,6 +264,7 @@ if raw_strain is not None:
                 
                 scan_scores = []
                 scan_times = []
+                energy_scores = [] # Classical Comparison
                 
                 # Limit scan to ~200 windows for perf
                 total_samples = len(whitened_strain)
@@ -274,23 +283,42 @@ if raw_strain is not None:
                     start = i * step
                     end = start + win_pts
                     chunk = whitened_strain[start:end]
-                    t_point = t[start + win_pts//2]
                     
-                    # Pass fs to utils
-                    val = run_classifier(chunk, current_weights, fs=fs_val)
-                    scan_scores.append(val)
-                    scan_times.append(t_point)
+                    if len(chunk) == win_pts:
+                        t_point = t[start + win_pts//2]
+                        
+                        # Quantum Pass
+                        val = run_classifier(chunk, current_weights, fs=fs_val)
+                        scan_scores.append(val)
+                        scan_times.append(t_point)
+                        
+                        # Classical Pass (Simple Energy/Band power)
+                        # Chirps have power in 30-300Hz
+                        fft = np.abs(np.fft.rfft(chunk))
+                        freqs = np.fft.rfftfreq(len(chunk), d=1/fs_val)
+                        band_mask = (freqs > 30) & (freqs < 300)
+                        e_val = np.sum(fft[band_mask])
+                        energy_scores.append(e_val)
                     
                     progress_infer.progress((i+1)/len(iterator))
                 
+                # Normalize Classical Scores to [-1, 1] for comparison
+                e_np = np.array(energy_scores)
+                if np.max(e_np) > 0:
+                    e_norm = (e_np - np.mean(e_np)) / (np.std(e_np) + 1e-9)
+                    # Clip to rough Z-range
+                    e_norm = np.clip(e_norm / 3.0, -1, 1)
+                else:
+                    e_norm = e_np
+                
+                # Plot 1: Trace
                 fig_det, ax = plt.subplots(figsize=(10, 3))
                 fig_det.patch.set_facecolor('none')
                 ax.set_facecolor('#111')
-                ax.plot(scan_times, scan_scores, color='#00f3ff', linewidth=2, label='Quantum Output')
+                ax.plot(scan_times, scan_scores, color='#00f3ff', linewidth=2, label='Quantum VQC')
+                ax.plot(scan_times, e_norm, color='gray', linestyle='--', alpha=0.5, label='Classical Energy (Ref)') # Added Ref
                 ax.axhline(det_thresh, color='red', linestyle='--', label='Threshold')
-                ax.set_title("Detection Trace", color='white')
-                ax.legend(facecolor='#222', edgecolor='white', labelcolor='white')
-                ax.tick_params(colors='white')
+                ax.set_title("Detection Trace (Quantum vs Classical Ref)", color='white')
                 ax.legend(facecolor='#222', edgecolor='white', labelcolor='white')
                 ax.tick_params(colors='white')
                 st.pyplot(fig_det)

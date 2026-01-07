@@ -110,7 +110,38 @@ with tab1:
     st.plotly_chart(fig, use_container_width=True)
 
 with tab2:
-    st.subheader("Trajectory Divergence ||Δ(t)||")
+    st.subheader("Lyapunov Exponent (Finite-Time Estimate)")
+    st.markdown(r"""
+**Definition**: The rate of separation of infinitesimally close trajectories. 
+$|\delta Z(t)| \approx e^{\lambda t} |\delta Z_0|$
+""")
+
+    # Estimate Lambda
+    # separation = d0 * exp(lambda * t)
+    # log(sep/d0) = lambda * t
+    # lambda = log(sep/d0) / t
+    
+    # We take the average over the last chunk of time where they are separated but not uncorrelated
+    # This is a Rough Finite-Time Lyapunov Exponent (FTLE).
+    
+    with np.errstate(divide='ignore'):
+        lambdas = np.log(divergence / epsilon) / t
+        
+    # Filter valid
+    valid_l = lambdas[np.isfinite(lambdas) & (t > 5)]
+    if len(valid_l) > 0:
+        est_lambda = np.mean(valid_l[-100:]) # Last 100 pts
+        
+        c_lyap1, c_lyap2 = st.columns(2)
+        with c_lyap1:
+            st.metric("Est. Lyapunov (FTLE)", f"{est_lambda:.3f}")
+        with c_lyap2:
+            st.metric("Reference (Classic)", "~0.906")
+            
+        st.caption("**Note**: This is a trajectory-based finite-time estimate. A full calculation requires the Benettin algorithm (QR decomposition) over long times.")
+    else:
+        st.warning("Trajectories haven't diverged enough yet.")
+
     st.markdown("Log-scale divergence shows exponential growth (linear slope) characteristic of chaos.")
     
     # Matplotlib for precise log plot control

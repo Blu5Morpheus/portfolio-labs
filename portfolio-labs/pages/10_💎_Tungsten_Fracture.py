@@ -17,9 +17,15 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("💎 Tungsten Quantum Fracture (VQE)")
+st.title("💎 Toy Spin-Lattice (Tungsten-Inspired)")
 st.markdown("### Variational Quantum Eigensolver")
-st.markdown("Finding the Ground State Energy of the atomic lattice using a parameterized quantum circuit.")
+st.markdown("Finding the Ground State Energy of a 1D toy lattice model inspired by Tungsten bonding.")
+
+st.info("""
+**Physical Sandbox Disclaimer**:
+Real material fracture requires **Density Functional Theory (DFT)** and many-body electron simulations.
+This model uses a simplified **Tight-Binding Hamiltonian** mapped to qubits to demonstrate the *principle* of using VQE for material properties.
+""")
 
 # --- VQE Setup ---
 # Toy Hamiltonian for 2 interacting atoms (1D dimer unit cell)
