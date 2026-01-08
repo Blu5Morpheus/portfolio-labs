@@ -125,3 +125,27 @@ def compute_volume_form(vertices, probe):
         dist_prod *= (abs(dist) + 0.01)
         
     return 1.0 / dist_prod
+
+def check_polygon_containment(vertices, point):
+    """
+    Ray casting algorithm for point in polygon.
+    Vertices: Nx2 array
+    Point: 2-element array [x, y]
+    """
+    x, y = point
+    n = len(vertices)
+    inside = False
+    
+    p1x, p1y = vertices[0]
+    for i in range(n + 1):
+        p2x, p2y = vertices[i % n]
+        if y > min(p1y, p2y):
+            if y <= max(p1y, p2y):
+                if x <= max(p1x, p2x):
+                    if p1y != p2y:
+                        xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
+                    if p1x == p2x or x <= xinters:
+                        inside = not inside
+        p1x, p1y = p2x, p2y
+        
+    return inside, 1.0 if inside else 0.0

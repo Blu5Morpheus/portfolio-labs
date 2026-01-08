@@ -14,6 +14,10 @@ sys.path.append(root_dir)
 
 from sdk.quantum_lock import QuantumLock
 
+# Define proper paths for file access
+base_path = root_dir # root_dir was defined above (portfolio-web)
+
+
 matplotlib.use('Agg')
 
 st.set_page_config(page_title="Quantum Lock", page_icon="🔐", layout="wide")
