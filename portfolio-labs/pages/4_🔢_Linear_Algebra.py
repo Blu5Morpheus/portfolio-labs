@@ -131,6 +131,58 @@ col3.metric("Trace", f"{props['trace']:.2f}", help="Sum of diagonal elements.")
 col4.metric("Real Eigenvalues?", "Yes" if props['is_real_eigen'] else "No", help="If No, involves rotation.")
 
 st.markdown("---")
+st.subheader("3. The Jacobian & Determinant")
+show_jacobian = st.checkbox("Show Jacobian Interpretation 🧠")
+
+if show_jacobian:
+    st.markdown(f"""
+    **The Determinant is the Expansion Factor.**
+    
+    *   **Input Area**: 1.0 (Unit Square)
+    *   **Output Area**: {np.abs(det):.4f} (Parallelogram)
+    *   **Ratio**: {np.abs(det):.4f}
+    
+    In calculus (change of variables), this $|\\det(J)|$ tells us how local volume scales.
+    """)
+    
+    # Area verification
+    v1 = M[:, 0]
+    v2 = M[:, 1]
+    # Cross product Z-component for 2D vectors
+    area = np.abs(v1[0]*v2[1] - v1[1]*v2[0])
+    st.caption(f"Numerically Calculated Area: {area:.4f} (Matches |det|)")
+
+st.subheader("4. Eigenvector Residual Check")
+st.markdown("Verifying $A v = \\lambda v$ numerically.")
+
+if props['is_real_eigen']:
+    vals = props['eig_vals']
+    vecs = props['eig_vecs']
+    
+    for i in range(len(vals)):
+        lam = vals[i]
+        v_eig = vecs[:, i]
+        
+        # Av
+        Av_res = M @ v_eig
+        # lam * v
+        lam_v = lam * v_eig
+        
+        # Residual ||Av - lam*v||
+        residual = np.linalg.norm(Av_res - lam_v)
+        
+        col_res1, col_res2 = st.columns([3, 1])
+        with col_res1:
+            st.code(f"v{i+1}: {v_eig}\nλ{i+1}: {lam:.3f}")
+        with col_res2:
+            st.metric(f"Residual {i+1}", f"{residual:.2e}")
+            
+    if props['cond'] > 100:
+         st.warning("⚠️ Matrix is ill-conditioned. Numerical stability at risk.")
+else:
+    st.write("Complex Eigenvalues (Rotation detected). Visual residuals skipped.")
+
+st.markdown("---")
 st.markdown("""
 ### What to look for:
 - **Determinant = 0**: The square collapses into a line or point.
