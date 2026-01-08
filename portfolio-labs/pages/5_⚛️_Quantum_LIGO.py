@@ -53,7 +53,7 @@ if mode == "Simulation":
     whitened_strain = whiten_data(raw_strain, fs=fs_val)
 
 elif mode == "Local Data (data/)":
-    data_dir = os.path.join(os.getcwd(), "data")
+    data_dir = os.path.join(os.getcwd(), "data/")
     if not os.path.exists(data_dir):
         os.makedirs(data_dir)
         st.sidebar.warning(f"Created {data_dir}. Place HDF5 files here.")
