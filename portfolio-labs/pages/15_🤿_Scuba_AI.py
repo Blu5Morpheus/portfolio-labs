@@ -122,14 +122,22 @@ with col_train:
                 # Actually, implementing full PPO in 1 file is hard.
                 # Let's use a "Reflex" heuristic training target.
                 
-                # Heuristic Teacher:
-                # If too deep, Inflate (2). If too shallow, Deflate (0).
-                # If fast, counter.
+                # Heuristic Teacher (PID-like):
+                # Target: 15.0m
+                err = next_obs[0] - 15.0
+                vel = next_obs[1]
                 
-                target = 1
-                if next_obs[0] > 15.5: target = 2 # Too deep, add air
-                if next_obs[0] < 14.5: target = 0 # Too shallow, dump air
-                if next_obs[1] > 0.5: target = 2 # Sinking fast, inflate
+                # Desired action:
+                # If err > 0 (Too deep): Inflate (2)
+                # If err < 0 (Too shallow): Deflate (0)
+                # But damp with velocity!
+                # If sinking fast (vel > 0.5) and near target, Inflate hard.
+                
+                score = err * 1.0 + vel * 2.0  # PD Control signal
+                
+                target = 1 # Hold
+                if score > 0.5: target = 2 # Inflate (Sink force high)
+                elif score < -0.5: target = 0 # Deflate (Rise force high)
                 
                 loss = nn.CrossEntropyLoss()(logits.unsqueeze(0), torch.tensor([target]))
                 

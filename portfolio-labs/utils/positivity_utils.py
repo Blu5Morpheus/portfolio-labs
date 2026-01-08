@@ -79,3 +79,49 @@ def calculate_boundary_distance(u, v, threshold, curved=False):
     
     score = min_margin / 0.3 # Scale factor
     return min(score, 1.0)
+
+def compute_volume_form(vertices, probe):
+    """
+    Computes the canonical form Omega for a polygon.
+    Omega = Sum_i  dlog(Z_i, Z_{i+1}, Y)
+    
+    For a 2D polygon with vertices Z, relative to probe Y.
+    This is a heuristic scalar value representing the 'magnitude' of the form at Y.
+    """
+    # Simply 1/distance_to_boundary for visualization
+    # Real form is a differential form. Use distance score as proxy magnitude.
+    
+    # Check if inside
+    # If outside, 0.
+    
+    # We can reuse calculate_boundary_distance logic or do winding number.
+    # For this toy model, let's just make it proportional to 1 / (min_dist + epsilon)
+    
+    # We need to map vertices to the u,v logic or checking geometry.
+    # The Amplituhedron app uses 'calculate_boundary_distance' for the u,v space.
+    # But for the Polygon visualizer, it passes vertices.
+    
+    # Let's implementation a simple 'Inverse distance product' to all edges
+    
+    # Edges
+    dist_prod = 1.0
+    
+    for i in range(len(vertices)):
+        p1 = vertices[i]
+        p2 = vertices[(i+1)%len(vertices)]
+        
+        # Distance from probe to line p1-p2
+        # Line: ax + by + c = 0
+        # Normal vector n = (-(y2-y1), x2-x1)
+        
+        normal = np.array([-(p2[1]-p1[1]), p2[0]-p1[0]])
+        normal = normal / (np.linalg.norm(normal) + 1e-9)
+        
+        # Project probe-p1 onto normal
+        dist = np.dot(probe - p1, normal)
+        
+        # If we are inside, all distances should be same sign (depending on winding)
+        # We just care about magnitude near boundary
+        dist_prod *= (abs(dist) + 0.01)
+        
+    return 1.0 / dist_prod

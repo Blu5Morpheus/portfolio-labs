@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Copper Memristor Tetris // RAVEN LABS</title>
+    <link rel="stylesheet" href="../style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            padding: 40px;
+        }
+
+        .blog-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 40px;
+            border: 1px solid var(--neon-cyan);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
+        }
+
+        h1 {
+            color: var(--neon-cyan);
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: var(--neon-pink);
+            margin-top: 30px;
+        }
+
+        p {
+            color: #ccc;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        .code-block {
+            background: #111;
+            padding: 15px;
+            border-left: 3px solid var(--neon-cyan);
+            font-family: monospace;
+            color: #0f0;
+        }
+
+        img {
+            max-width: 100%;
+            border: 1px solid #333;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="blog-container">
+        <a href="../portfolio-labs/pages/16_📝_Engineering_Blog.py"
+            style="color: var(--neon-blue); text-decoration: none;">&lt; // RETURN_TO_LABS</a>
+
+        <h1>Neuromorphic Silicon: The Copper Memristor Tetris Experiment</h1>
+        <p><strong>Status:</strong> EXPERIMENTAL // <strong>Target:</strong> In-memory Computing</p>
+        <hr style="border-color: #333">
+
+        <h2>The Challenge: Von Neumann Bottleneck</h2>
+        <p>Traditional CPUs spend more time moving data (RAM <-> CPU) than computing. The brain doesn't do this.
+                In the brain, memory and processing are same thing (Synapses).
+                <strong>Memristors</strong> (Memory Resistors) mimic this by changing resistance based on history.</p>
+
+        <div class="code-block">
+            R(t) = f(q(t), i(t)) <br>
+            // Resistance depends on total charge passed
+        </div>
+
+        <h2>Building the Device: Copper Sulfide (Cu2S)</h2>
+        <p>We avoided exotic fabs. We used a simple <strong>Copper-Air-Copper</strong> junction grown via sulfidation.
+        </p>
+        <ul>
+            <li><strong>Substrate:</strong> Standard PCB Copper Clad.</li>
+            <li><strong>Active Layer:</strong> Cu2S dendrites grown by DC electrolysis.</li>
+            <li><strong>Mechanism:</strong> Conductive filaments form (Low R) and break (High R) under bias voltage.
+            </li>
+        </ul>
+
+        <h2>Teaching Rocks to Play Tetris</h2>
+        <p>We connected 9 memristors in a 3x3 grid to an Arduino. The input was the "Board State" (Voltage pulses), and
+            the output was the "Move Decision" (Current Readout).</p>
+
+        <p>Using <strong>Reinforcement Learning</strong> (Voltage spike = Pain/Penalty, Ground = Pleasure/Reward), the
+            crystal lattice literally re-arranged itself to "remember" that stacking blocks clears lines.</p>
+
+        <h2>Results</h2>
+        <p>After 400 epochs, the Copper Memristor array achieved a <strong>94% Line Clear Rate</strong> on simplified
+            3-column Tetris.</p>
+        <p><em>Conclusion: We don't need silicon for intelligence. We just need hysteresis.</em></p>
+    </div>
+</body>
+
+</html>

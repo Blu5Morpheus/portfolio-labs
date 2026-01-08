@@ -6,8 +6,11 @@ import sys
 import os
 
 # Add project root to path to import sdk
-base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(base_path)
+# pages -> portfolio-labs -> portfolio-web (root)
+current_dir = os.path.dirname(os.path.abspath(__file__))
+labs_dir = os.path.dirname(current_dir)
+root_dir = os.path.dirname(labs_dir) # Go up one more to portfolio-web
+sys.path.append(root_dir)
 
 from sdk.quantum_lock import QuantumLock
 
