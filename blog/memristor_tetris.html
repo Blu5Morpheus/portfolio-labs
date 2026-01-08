@@ -76,9 +76,40 @@
             // Resistance depends on total charge passed
         </div>
 
-        <h2>Building the Device: Copper Sulfide (Cu2S)</h2>
-        <p>We avoided exotic fabs. We used a simple <strong>Copper-Air-Copper</strong> junction grown via sulfidation.
-        </p>
+        <img src="memristor_setup.png" alt="Copper Sulfide Memristor Array playing Tetris">
+
+        <h2>1️⃣ The Concept: Physical Learning (Reservoir Computing)</h2>
+        <p>This is not just a resistor. This is a <strong>Nonlinear Electrochemical System</strong> that learns via
+            dynamics, not weights.
+            It demonstrates <strong>Reservoir Computing</strong>: using a fixed, chaotic substrate to project inputs
+            into a high-dimensional state space, where a simple linear readout can classify them.</p>
+
+        <p class="quote">"This system performs computation through ionic transport, redox dynamics, and memory effects
+            in a nonlinear electrochemical medium. Learning occurs in the readout, not the substrate."</p>
+
+        <h2>2️⃣ The Build: What You Need</h2>
+        <p><strong>Substrate:</strong> Copper Sulfate Solution (CuSO4) + Copper Electrodes.</p>
+
+        <h3>Required Hardware</h3>
+        <ul>
+            <li><strong>Electrodes:</strong> 6-12 Copper wires. Geometry must be FIXED (use a 3D printed lid or drilled
+                stopper).</li>
+            <li><strong>Control:</strong> Arduino + Series Resistors (1kΩ - 10kΩ) for current limiting.</li>
+            <li><strong>Reference:</strong> A purely isolated Copper or Stainless Steel wire as the "Ground"
+                (Electrochemical 0V).</li>
+            <li><strong>Stimulus:</strong> ±0.5V to ±1.5V pulses. Do NOT use raw PWM. Use an <strong>RC Low-Pass
+                    Filter</strong> (10kΩ + 10µF) to smooth the signal.</li>
+        </ul>
+
+        <h2>3️⃣ Why It's Elite</h2>
+        <ul>
+            <li><strong>Real Physics:</strong> Computation via ion migration, not silicon logic.</li>
+            <li><strong>No Backprop:</strong> Uses "Echo State" / fading memory properties of the liquid.</li>
+            <li><strong>Neuromorphic:</strong> Mimics synaptic plasticity (Short-term vs Long-term potentiation).</li>
+        </ul>
+
+        <hr>
+        <p><strong>Next Phase:</strong> Classifying chaotic waveforms (Mackey-Glass) using only the liquid's memory.</p>
         <ul>
             <li><strong>Substrate:</strong> Standard PCB Copper Clad.</li>
             <li><strong>Active Layer:</strong> Cu2S dendrites grown by DC electrolysis.</li>
