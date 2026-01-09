@@ -2,7 +2,9 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
-from utils.positivity_utils import check_positivity, compute_volume_form
+from utils.positivity_utils import check_positivity, compute_volume_form, check_polygon_containment
+
+# ...
 
 matplotlib.use('Agg')
 
@@ -97,7 +99,7 @@ with col_info:
     # In P^2 (Projective), being "Positive" means inside the convex hull
     # We check if Probe is inside the polygon
     
-    is_inside, probe_score = check_positivity(vertices, np.array([px, py]))
+    is_inside, probe_score = check_polygon_containment(vertices, np.array([px, py]))
     
     if is_inside:
         st.success("INSIDE (Positive)")
